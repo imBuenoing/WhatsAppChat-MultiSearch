@@ -12,25 +12,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileFilterType = document.getElementById('fileFilterType');
     const linkFilter = document.getElementById('linkFilter');
     const linkFilterType = document.getElementById('linkFilterType');
-     const dateFilter = document.getElementById('dateFilter');
+    const dateFilter = document.getElementById('dateFilter');
     const dateFilterType = document.getElementById('dateFilterType');
     const beforeDateInput = document.getElementById('beforeDate');
     const afterDateInput = document.getElementById('afterDate');
     const resetFiltersBtn = document.getElementById('resetFiltersBtn');
+    const domainFilterDiv = document.querySelector('.domain-filter');
     const chatHistoryContent = document.getElementById('chatHistoryContent');
-    const scrollToTopBtn = document.getElementById('scrollToTopBtn');
+     const scrollToTopBtn = document.getElementById('scrollToTopBtn');
     const donateBtn = document.getElementById('donateBtn');
 
 
     let chatData = [];
     let filteredChatData = [];
     let currentSearchTerm = '';
-     const itemsPerPage = 20;
+     let itemsPerPage = 0; // Set itemsPerPage dynamically
      let currentPage = 1;
      let fuse;
+      let initialResultsDisplayed = false;
+    let displayedResultItems = [];
 
 
-        // Function to extract date string in MMM YYYY format
+    // Function to extract date string in MMM YYYY format
     function formatDate(dateString) {
       const date = new Date(dateString);
       return date.toLocaleString('default', { month: 'short', year: 'numeric' });
@@ -127,6 +130,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
 
+     function createDomainFilters(domains) {
+            domainFilterDiv.innerHTML = '';
+
+             domains.forEach(([domain, count]) => {
+                const label = document.createElement('label');
+                 const input = document.createElement('input');
+                input.type = 'checkbox';
+                input.value = domain;
+                 input.id = `domain-${domain}`; // Unique ID for label association
+                  label.appendChild(input);
+                  const textSpan = document.createElement('span');
+                 textSpan.textContent = `${domain} (${count})`;
+                  label.appendChild(textSpan);
+                domainFilterDiv.appendChild(label);
+            });
+        }
+
 
       function parseChat(text) {
          const messageRegex = /^\[(.*?)\]\s(.*?):\s(.*?)$/gm;
@@ -161,9 +181,11 @@ document.addEventListener('DOMContentLoaded', () => {
                  displayFilterOptions(fileFilter, chatInfo.files);
                   displayFilterOptions(linkFilter, chatInfo.links);
                    displayFilterOptions(dateFilter, chatInfo.dates);
-
+                    createDomainFilters(chatInfo.links)
 
                  filteredChatData = [...chatData];
+                   itemsPerPage = Math.floor(searchResultsDiv.offsetHeight / 60);
+
                  displayResults(filteredChatData);
                 displayFullChatHistory();
                 loadingDiv.textContent = 'File Loaded';
@@ -226,7 +248,32 @@ document.addEventListener('DOMContentLoaded', () => {
                          }
                 } )
             );
+             }else if(linkFilterType.value === 'selected' && domainFilterDiv.querySelectorAll('input[type="checkbox"]:checked').length > 0){
+                    const selectedDomains = Array.from(domainFilterDiv.querySelectorAll('input[type="checkbox"]:checked')).map(checkbox => checkbox.value);
+
+                    filteredResults = filteredResults.filter(message =>
+                        selectedDomains.some(domain => {
+                            try {
+                                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                                let match;
+                                while((match = urlRegex.exec(message.text)) !== null){
+                                    const url = new URL(match[0]);
+                                    if(url.hostname.includes(domain)){
+                                          return true;
+                                    }
+                                }
+                                return false;
+
+
+                            } catch(error) {
+                                return false;
+
+                            }
+                        })
+                    );
+
             }
+
 
             // Date Filter
               if(dateFilterType.value === 'selected' && dateFilter.selectedOptions.length > 0 ){
@@ -251,7 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
               }
              filteredChatData =  filteredResults;
              currentPage = 1;
-             displayResults(filteredChatData);
+               displayResults(filteredChatData);
         }
 
     // Event listeners for filter dropdowns
@@ -299,7 +346,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         applyFilters();
     });
+     domainFilterDiv.addEventListener('change', () =>{
+            if(linkFilterType.value === 'any'){
+               linkFilterType.value = 'selected';
+            }
 
+          applyFilters();
+     })
       dateFilterType.addEventListener('change', () => {
           if (dateFilterType.value === 'any') {
                 dateFilter.value = '';
@@ -329,10 +382,10 @@ document.addEventListener('DOMContentLoaded', () => {
         dateFilter.value = '';
          beforeDateInput.value = '';
         afterDateInput.value = '';
-
+        domainFilterDiv.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
        filteredChatData = [...chatData];
         currentPage = 1;
-        displayResults(filteredChatData);
+      displayResults(filteredChatData);
            displayFullChatHistory();
     });
 
@@ -398,6 +451,28 @@ document.addEventListener('DOMContentLoaded', () => {
                          }
                 } )
             );
+             } else if(linkFilterType.value === 'selected' && domainFilterDiv.querySelectorAll('input[type="checkbox"]:checked').length > 0){
+                const selectedDomains = Array.from(domainFilterDiv.querySelectorAll('input[type="checkbox"]:checked')).map(checkbox => checkbox.value);
+                    filteredResults = filteredResults.filter(message =>
+                        selectedDomains.some(domain => {
+                            try {
+                                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                                let match;
+                                while((match = urlRegex.exec(message.text)) !== null){
+                                    const url = new URL(match[0]);
+                                    if(url.hostname.includes(domain)){
+                                        return true;
+                                    }
+                                }
+                                return false;
+
+
+                            } catch(error) {
+                                return false;
+                            }
+                        })
+                    );
+
             }
 
             // Date Filter
@@ -432,65 +507,74 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // Function to display search results
-    function displayResults(messages) {
-        searchResultsDiv.innerHTML = '';
-        searchResultsDiv.classList.remove('hidden');
+     function displayResults(messages) {
+            searchResultsDiv.innerHTML = '';
+            searchResultsDiv.classList.remove('hidden');
 
-           const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = startIndex + itemsPerPage;
-             const paginatedMessages = messages.slice(startIndex, endIndex);
+            // Sort messages by date descending
+            const sortedMessages = [...messages].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-
-            if(paginatedMessages.length === 0){
-                   const noResult = document.createElement('div');
+             if(sortedMessages.length === 0){
+                const noResult = document.createElement('div');
                   noResult.textContent = 'No results found.';
                   searchResultsDiv.appendChild(noResult);
                 loadMoreBtn.classList.add('hidden');
-
                return;
              }
-            const conversations = groupMessagesByConversation(paginatedMessages);
 
 
+             if(!initialResultsDisplayed){
+                   itemsPerPage = Math.floor(searchResultsDiv.offsetHeight / 60);
+                    initialResultsDisplayed = true;
+             }
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = startIndex + itemsPerPage;
+                 const paginatedMessages = sortedMessages.slice(startIndex, endIndex);
 
-            conversations.forEach(conversation => {
 
-             const firstMessage = conversation[0];
-                const resultItem = document.createElement('div');
-                resultItem.classList.add('result-item');
-                const messageContent = conversation.map(message => `[${message.timestamp}] ${message.sender}: ${message.text}`).join('\n');
-                resultItem.textContent = `[${firstMessage.timestamp}] ${firstMessage.sender}: ${firstMessage.text}`;
-                resultItem.addEventListener('click', () => expandConversation(conversation, firstMessage.timestamp));
+                const conversations = groupMessagesByConversation(paginatedMessages);
 
-                 searchResultsDiv.appendChild(resultItem);
 
-            });
+               conversations.forEach(conversation => {
+                    const firstMessage = conversation[0];
+                     const resultItem = document.createElement('div');
+                      resultItem.classList.add('result-item');
+                    resultItem.textContent = `[${firstMessage.timestamp}] ${firstMessage.sender}: ${firstMessage.text}`;
 
-            if (messages.length > endIndex) {
-                 loadMoreBtn.classList.remove('hidden');
+                   resultItem.addEventListener('click', () => expandConversation(conversation, firstMessage.timestamp));
+                  searchResultsDiv.appendChild(resultItem);
+                   displayedResultItems.push(resultItem);
+
+                });
+
+             if (sortedMessages.length > endIndex) {
+                loadMoreBtn.classList.remove('hidden');
              } else {
                 loadMoreBtn.classList.add('hidden');
             }
 
-
         }
+
+
 
           loadMoreBtn.addEventListener('click', () => {
            currentPage++;
             displayResults(filteredChatData);
        });
-       // Function to expand a conversation
+        // Function to expand a conversation
     function expandConversation(conversation, selectedTimestamp) {
 
-
-           // Scroll to the selected message
-         const selectedMessageElement = document.getElementById(`message-${selectedTimestamp.replace(/[\s:,]/g, '-')}`);
+          displayedResultItems.forEach(item => item.classList.remove('highlighted'))
+           const selectedMessageElement = document.getElementById(`message-${selectedTimestamp.replace(/[\s:,]/g, '-')}`);
              if(selectedMessageElement){
-            selectedMessageElement.scrollIntoView({
-             behavior: 'smooth',
-            block: 'start'
-           });
-         }
+                   selectedMessageElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                     });
+                selectedMessageElement.classList.add('highlighted')
+
+            }
+
 
     }
 
@@ -518,12 +602,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
      });
     // Scroll to top logic
-    scrollToTopBtn.addEventListener('click', () => {
-       window.scrollTo({ top: 0, behavior: 'smooth' });
-     });
+       scrollToTopBtn.addEventListener('click', () => {
+             searchResultsDiv.scrollTo({ top: 0, behavior: 'smooth' });
+
+    });
 
     // Donate button logic
     donateBtn.addEventListener('click', () => {
-       window.open('https://example.com/donate', '_blank');
+       window.open('https://buymeacoffee.com/juino', '_blank');
     });
 });
