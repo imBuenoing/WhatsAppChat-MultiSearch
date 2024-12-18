@@ -10,44 +10,67 @@
     <script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>WhatsAppChat-MultiSearch</h1>
-        <input type="file" id="chatFile" accept=".txt">
-        <div id="loading"></div>
+    <div class="app-container">
+       <div class="search-container">
+          <input type="text" id="searchBox" placeholder="Search messages..." autocomplete="off">
+          <span class="tooltip-trigger">?</span>
+             <div id="tooltip" class="hidden">
+            Supported Operators:<br>
+            <code>"phrase"</code> Search for an exact phrase.<br>
+            <code>*</code> Wildcard matching any word or phrase.<br>
+            <code>AND, OR, NOT</code> Boolean logic. <br>
+            Click outside to dismiss.
+          </div>
+        </div>
 
-        <div id="filters" class="hidden">
-          <div class="filter-container">
-              <label for="senderFilter">From:</label>
-               <select id="senderFilter" multiple></select>
-           </div>
-             <div class="filter-container">
+        <aside class="sidebar">
+            <h2>Filters</h2>
+          <div class="sidebar-section">
+            <input type="file" id="chatFile" accept=".txt">
+                <div id="loading"></div>
+
+            </div>
+            <div class="sidebar-section">
+                <label for="senderFilter">From:</label>
+                <select id="senderFilter" multiple></select>
+            </div>
+            <div class="sidebar-section">
                 <label for="fileFilter">Files:</label>
                 <select id="fileFilter" multiple>
-                  <option value="notFile">Not File Related</option>
+                    <option value="notFile">Not File Related</option>
                 </select>
-           </div>
-
-           <div class="filter-container">
-                <label for="linkFilter">Links:</label>
-                  <select id="linkFilter">
-                  <option value="any">Any</option>
-                  <option value="hasLink">Has Link</option>
-                    <option value="noLink">No Link</option>
-                  </select>
-           </div>
-           <div class="filter-container">
-                <label for="dateFilter">Date:</label>
-                 <select id="dateFilter" multiple></select>
             </div>
-        </div>
+              <div class="sidebar-section">
+                    <label for="linkFilter">Links:</label>
+                      <select id="linkFilter">
+                      <option value="any">Any</option>
+                      <option value="hasLink">Has Link</option>
+                        <option value="noLink">No Link</option>
+                      </select>
+                       <div class="domain-filter">
+                        </div>
+                </div>
+               <div class="sidebar-section">
+                  <label for="dateFilter">Date:</label>
+                     <select id="dateFilter" multiple></select>
+               </div>
+            <div class="sidebar-section date-range-filter">
+              <label for="beforeDate">Before:</label>
+              <input type="date" id="beforeDate" >
+              <label for="afterDate">After:</label>
+                <input type="date" id="afterDate">
 
-        <div class="search-container hidden" >
-          <input type="text" id="searchBox" placeholder="Search messages..." autocomplete="off">
-          <span class="tooltip-trigger" title="Supported Operators: AND, OR, NOT (e.g. hello AND world, cat OR dog, NOT cheese)">?</span>
-        </div>
-
-        <div id="searchResults" class="hidden"></div>
+           </div>
+        </aside>
+          <main class="content">
+             <div id="searchResults" class="hidden"></div>
+               <button id="loadMoreBtn" class="hidden">Load More</button>
+        </main>
     </div>
+       <div class="floating-buttons">
+        <button id="scrollToTopBtn">↑</button>
+        <button id="donateBtn">Donate</button>
+         </div>
     <script src="script.js"></script>
 </body>
 </html>
