@@ -3,13 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WhatsApp Chat Analyzer</title>
+    <title>WhatsAppChat-MultiSearch</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
+     <link rel="icon" href="icon.png" type="image/x-icon">
+    <!-- Include Fuse.js from CDN-->
+       <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
+
+     <!-- Include Fuse.js locally -->
+     <!-- <script src="fuse.js"></script>-->
 </head>
 <body>
     <div class="container">
-        <h1>WhatsApp Chat Analyzer</h1>
+        <h1>WhatsAppChat-MultiSearch</h1>
         <input type="file" id="chatFile" accept=".txt">
         <div id="loading"></div>
 
