@@ -1,27 +1,57 @@
 document.addEventListener('DOMContentLoaded', () => {
+     const tooltipTrigger = document.querySelector('.tooltip-trigger');
+    const tooltip = document.getElementById('tooltip');
+    document.addEventListener('click', (event) => {
+        if (event.target !== tooltipTrigger && !tooltip.contains(event.target)) {
+            tooltip.classList.add('hidden');
+        }
+    });
+
+
+   tooltipTrigger.addEventListener('click', () => {
+    tooltip.classList.toggle('hidden');
+});
+
     const chatFile = document.getElementById('chatFile');
     const loadingDiv = document.getElementById('loading');
     const searchBox = document.getElementById('searchBox');
     const searchResultsDiv = document.getElementById('searchResults');
-    const filtersDiv = document.getElementById('filters');
-    const searchContainerDiv = document.querySelector(".search-container");
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    const scrollToTopBtn = document.getElementById('scrollToTopBtn');
+    const donateBtn = document.getElementById('donateBtn');
+    const filtersDiv = document.querySelector(".sidebar");
+       const searchContainerDiv = document.querySelector(".search-container");
     const senderFilter = document.getElementById('senderFilter');
     const fileFilter = document.getElementById('fileFilter');
      const dateFilter = document.getElementById('dateFilter');
     const linkFilter = document.getElementById('linkFilter');
-
+  const domainFilterContainer = document.querySelector(".domain-filter");
+    const beforeDateInput = document.getElementById('beforeDate');
+     const afterDateInput = document.getElementById('afterDate');
+     let linkDomains = {};
     let chatData = [];
      let senderCounts = {};
      let fileCounts = {};
      let dateCounts = {};
     let fuse;
+    let currentResults = [];
+    let itemsPerPage = 20;
+    let currentPage = 1;
+
+    scrollToTopBtn.addEventListener('click', () => {
+         window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+       donateBtn.addEventListener('click', () => {
+        window.open('https://www.buymeacoffee.com/imbuenoing', '_blank');
+     })
+
 
     chatFile.addEventListener('change', async (event) => {
         loadingDiv.textContent = 'Processing chat file...';
-         filtersDiv.classList.add('hidden');
-      searchContainerDiv.classList.add('hidden');
+        filtersDiv.classList.add('hidden');
+        searchContainerDiv.classList.add('hidden');
         searchResultsDiv.classList.add("hidden");
-
+        loadMoreBtn.classList.add("hidden");
 
         const file = event.target.files[0];
 
@@ -33,17 +63,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
               const fileContents = await readFile(file);
-             const {chatData:parsedData, senderCounts: parsedSenders, fileCounts: parsedFiles, dateCounts: parsedDates} = parseChat(fileContents);
+             const {chatData:parsedData, senderCounts: parsedSenders, fileCounts: parsedFiles, dateCounts: parsedDates, linkDomains:parsedLinkDomains} = parseChat(fileContents);
             chatData = parsedData;
             senderCounts = parsedSenders
              fileCounts = parsedFiles;
-             dateCounts = parsedDates
-
+             dateCounts = parsedDates;
+            linkDomains = parsedLinkDomains;
           await saveChatData(await openDatabase(), chatData);
              setupFilters();
              setupSearch();
-          filtersDiv.classList.remove('hidden');
-           searchContainerDiv.classList.remove('hidden');
+         filtersDiv.classList.remove('hidden');
+            searchContainerDiv.classList.remove('hidden');
          loadingDiv.textContent = 'Chat loaded successfully';
 
 
@@ -56,105 +86,238 @@ document.addEventListener('DOMContentLoaded', () => {
 
     searchBox.addEventListener('input', () => {
         if (fuse){
+            currentPage = 1;
           const query = searchBox.value;
           const selectedSenders = Array.from(senderFilter.selectedOptions).map(option => option.value);
            const selectedFiles = Array.from(fileFilter.selectedOptions).map(option => option.value);
           const selectedDates = Array.from(dateFilter.selectedOptions).map(option => option.value);
            const selectedLink = linkFilter.value;
+        const selectedDomains = getSelectedDomains();
+            const beforeDate = beforeDateInput.value;
+            const afterDate = afterDateInput.value;
+
            const filters = {
                 senders: selectedSenders,
                 fileExtensions: selectedFiles,
-              link: selectedLink,
-             dates: selectedDates
+                link: selectedLink,
+                dates: selectedDates,
+               domains: selectedDomains,
+              beforeDate: beforeDate,
+            afterDate: afterDate
             }
               const results = performSearch(fuse, query, filters);
+             currentResults = results;
               displayResults(results);
         }
 
     });
 
     senderFilter.addEventListener('change', () => {
-      const query = searchBox.value;
-
        if (fuse){
+          currentPage = 1;
+      const query = searchBox.value;
              const selectedSenders = Array.from(senderFilter.selectedOptions).map(option => option.value);
              const selectedFiles = Array.from(fileFilter.selectedOptions).map(option => option.value);
              const selectedDates = Array.from(dateFilter.selectedOptions).map(option => option.value);
            const selectedLink = linkFilter.value;
-               const filters = {
+               const selectedDomains = getSelectedDomains();
+               const beforeDate = beforeDateInput.value;
+              const afterDate = afterDateInput.value;
+
+           const filters = {
                 senders: selectedSenders,
                 fileExtensions: selectedFiles,
-                   link: selectedLink,
-                    dates: selectedDates
+                link: selectedLink,
+                dates: selectedDates,
+               domains: selectedDomains,
+              beforeDate: beforeDate,
+            afterDate: afterDate
             }
 
-              const results = performSearch(fuse, query, filters);
-              displayResults(results);
+            const results = performSearch(fuse, query, filters);
+           currentResults = results;
+           displayResults(results);
         }
 
     });
         fileFilter.addEventListener('change', () => {
-          const query = searchBox.value;
            if (fuse){
+               currentPage = 1;
+           const query = searchBox.value;
                const selectedSenders = Array.from(senderFilter.selectedOptions).map(option => option.value);
               const selectedFiles = Array.from(fileFilter.selectedOptions).map(option => option.value);
             const selectedDates = Array.from(dateFilter.selectedOptions).map(option => option.value);
              const selectedLink = linkFilter.value;
+                 const selectedDomains = getSelectedDomains();
+              const beforeDate = beforeDateInput.value;
+                const afterDate = afterDateInput.value;
+
                 const filters = {
                 senders: selectedSenders,
                 fileExtensions: selectedFiles,
                    link: selectedLink,
-                     dates: selectedDates
+                     dates: selectedDates,
+                   domains: selectedDomains,
+                  beforeDate: beforeDate,
+                  afterDate: afterDate
             }
-                const results = performSearch(fuse, query, filters);
-              displayResults(results);
+
+             const results = performSearch(fuse, query, filters);
+           currentResults = results;
+           displayResults(results);
         }
 
     });
           dateFilter.addEventListener('change', () => {
+           if (fuse){
+              currentPage = 1;
              const query = searchBox.value;
 
-          if (fuse){
                const selectedSenders = Array.from(senderFilter.selectedOptions).map(option => option.value);
               const selectedFiles = Array.from(fileFilter.selectedOptions).map(option => option.value);
                const selectedDates = Array.from(dateFilter.selectedOptions).map(option => option.value);
              const selectedLink = linkFilter.value;
+                 const selectedDomains = getSelectedDomains();
+              const beforeDate = beforeDateInput.value;
+                const afterDate = afterDateInput.value;
 
                   const filters = {
                   senders: selectedSenders,
                    fileExtensions: selectedFiles,
                       link: selectedLink,
-                      dates: selectedDates
+                      dates: selectedDates,
+                    domains: selectedDomains,
+                   beforeDate: beforeDate,
+                  afterDate: afterDate
               }
 
-
-                 const results = performSearch(fuse, query, filters);
+             const results = performSearch(fuse, query, filters);
+                currentResults = results;
                displayResults(results);
         }
 
     });
      linkFilter.addEventListener('change', () => {
+          if (fuse){
+             currentPage = 1;
         const query = searchBox.value;
 
-          if (fuse){
                 const selectedSenders = Array.from(senderFilter.selectedOptions).map(option => option.value);
                const selectedFiles = Array.from(fileFilter.selectedOptions).map(option => option.value);
                const selectedDates = Array.from(dateFilter.selectedOptions).map(option => option.value);
              const selectedLink = linkFilter.value;
+           const selectedDomains = getSelectedDomains();
+              const beforeDate = beforeDateInput.value;
+                const afterDate = afterDateInput.value;
 
                   const filters = {
                   senders: selectedSenders,
                    fileExtensions: selectedFiles,
                       link: selectedLink,
-                      dates: selectedDates
+                      dates: selectedDates,
+                     domains: selectedDomains,
+                    beforeDate: beforeDate,
+                  afterDate: afterDate
               }
 
 
-                 const results = performSearch(fuse, query, filters);
-               displayResults(results);
+            const results = performSearch(fuse, query, filters);
+                currentResults = results;
+              displayResults(results);
         }
 
     });
+    beforeDateInput.addEventListener("change", () => {
+      if (fuse){
+        currentPage = 1;
+     const query = searchBox.value;
+
+                const selectedSenders = Array.from(senderFilter.selectedOptions).map(option => option.value);
+               const selectedFiles = Array.from(fileFilter.selectedOptions).map(option => option.value);
+               const selectedDates = Array.from(dateFilter.selectedOptions).map(option => option.value);
+             const selectedLink = linkFilter.value;
+           const selectedDomains = getSelectedDomains();
+              const beforeDate = beforeDateInput.value;
+                const afterDate = afterDateInput.value;
+
+                  const filters = {
+                  senders: selectedSenders,
+                   fileExtensions: selectedFiles,
+                      link: selectedLink,
+                      dates: selectedDates,
+                    domains: selectedDomains,
+                   beforeDate: beforeDate,
+                  afterDate: afterDate
+              }
+
+        const results = performSearch(fuse, query, filters);
+                currentResults = results;
+              displayResults(results);
+      }
+    });
+
+        afterDateInput.addEventListener("change", () => {
+      if (fuse){
+        currentPage = 1;
+          const query = searchBox.value;
+
+                const selectedSenders = Array.from(senderFilter.selectedOptions).map(option => option.value);
+               const selectedFiles = Array.from(fileFilter.selectedOptions).map(option => option.value);
+               const selectedDates = Array.from(dateFilter.selectedOptions).map(option => option.value);
+             const selectedLink = linkFilter.value;
+           const selectedDomains = getSelectedDomains();
+              const beforeDate = beforeDateInput.value;
+                const afterDate = afterDateInput.value;
+
+                  const filters = {
+                  senders: selectedSenders,
+                   fileExtensions: selectedFiles,
+                      link: selectedLink,
+                      dates: selectedDates,
+                     domains: selectedDomains,
+                    beforeDate: beforeDate,
+                  afterDate: afterDate
+              }
+
+            const results = performSearch(fuse, query, filters);
+                currentResults = results;
+              displayResults(results);
+      }
+    });
+        domainFilterContainer.addEventListener("change", () => {
+            if (fuse) {
+                currentPage = 1;
+                 const query = searchBox.value;
+
+                const selectedSenders = Array.from(senderFilter.selectedOptions).map(option => option.value);
+               const selectedFiles = Array.from(fileFilter.selectedOptions).map(option => option.value);
+               const selectedDates = Array.from(dateFilter.selectedOptions).map(option => option.value);
+             const selectedLink = linkFilter.value;
+             const selectedDomains = getSelectedDomains();
+              const beforeDate = beforeDateInput.value;
+                const afterDate = afterDateInput.value;
+
+                  const filters = {
+                  senders: selectedSenders,
+                   fileExtensions: selectedFiles,
+                      link: selectedLink,
+                      dates: selectedDates,
+                     domains: selectedDomains,
+                    beforeDate: beforeDate,
+                  afterDate: afterDate
+              }
+             const results = performSearch(fuse, query, filters);
+              currentResults = results;
+              displayResults(results);
+            }
+        })
+
+        loadMoreBtn.addEventListener('click', () => {
+            currentPage++;
+            displayResults(currentResults);
+
+    });
+
 
   async function loadDataFromIndexedDB() {
         loadingDiv.textContent = 'Loading chat from local storage...';
@@ -164,8 +327,8 @@ document.addEventListener('DOMContentLoaded', () => {
           chatData = savedData;
           setupFilters();
           setupSearch();
-          filtersDiv.classList.remove('hidden');
-           searchContainerDiv.classList.remove('hidden');
+        filtersDiv.classList.remove('hidden');
+        searchContainerDiv.classList.remove('hidden');
             loadingDiv.textContent = 'Chat loaded from storage';
           } else {
            loadingDiv.textContent = 'No chat available in local storage. Upload file';
@@ -193,48 +356,68 @@ document.addEventListener('DOMContentLoaded', () => {
        });
     }
 
-     function parseChat(chatText) {
-      const lines = chatText.split("\n");
-      const chatData = [];
-      const senderCounts = {};
-       const fileCounts = {};
-        const dateCounts = {};
-      const regex = /^\[(.*?)\]\s([^\:]+)\:\s(.*)$/;
+      function parseChat(chatText) {
+            const lines = chatText.split("\n");
+            const chatData = [];
+            const senderCounts = {};
+            const fileCounts = {};
+            const dateCounts = {};
+            const linkDomains = {};
+            const regex = /^\[(.*?)\]\s([^\:]+)\:\s(.*)$/;
 
-      lines.forEach((line) => {
-        const match = line.match(regex);
-        if (match) {
-          const timestamp = match[1];
-          const sender = match[2].trim();
-          const message = match[3].trim();
+            lines.forEach((line) => {
+                const match = line.match(regex);
+                if (match) {
+                    const timestamp = match[1];
+                    const sender = match[2].trim();
+                    const message = match[3].trim();
 
-          const fileExtensions = extractFileExtensions(message);
-            const hasLink = messageContainsLink(message);
-           const date = new Date(timestamp);
-           const year = date.getFullYear();
-           const month = date.toLocaleString('default', { month: 'long' });
-            const dateString = `${month} ${year}`;
+                    const fileExtensions = extractFileExtensions(message);
+                    const hasLink = messageContainsLink(message);
+                    const date = new Date(timestamp);
+                    const year = date.getFullYear();
+                    const month = date.toLocaleString('default', { month: 'long' });
+                    const dateString = `${month} ${year}`;
 
+                     if (hasLink) {
+                         const domain = extractDomain(message);
+                         if (domain) {
+                            linkDomains[domain] = (linkDomains[domain] || 0) + 1;
+                        }
 
-          chatData.push({ timestamp, sender, message, fileExtensions, hasLink, dateString });
+                     }
 
+                    chatData.push({ timestamp, sender, message, fileExtensions, hasLink, dateString });
 
-            senderCounts[sender] = (senderCounts[sender] || 0) + 1;
+                    senderCounts[sender] = (senderCounts[sender] || 0) + 1;
 
-          fileExtensions.forEach(extension => {
-            fileCounts[extension] = (fileCounts[extension] || 0 )+1;
-          })
-            dateCounts[dateString] = (dateCounts[dateString] || 0 )+1;
+                    fileExtensions.forEach(extension => {
+                        fileCounts[extension] = (fileCounts[extension] || 0) + 1;
+                    });
+                    dateCounts[dateString] = (dateCounts[dateString] || 0) + 1;
+                }
+            });
+
+            return { chatData, senderCounts, fileCounts, dateCounts, linkDomains };
         }
-      });
 
+      function extractDomain(message) {
+        const urlRegex = /(https?:\/\/[^\s/]+)/i;
+        const match = message.match(urlRegex);
+        if (match) {
+              try {
+                   const url = new URL(match[0]);
+               return url.hostname.replace(/^www\./, '')
+                 } catch (e) {
+                return null;
+                 }
+        }
+          return null;
 
-      return {chatData, senderCounts, fileCounts, dateCounts };
+      }
 
-    }
-
-     function messageContainsLink(message) {
-       const linkRegex = /(https?:\/\/[^\s]+)/i;
+    function messageContainsLink(message) {
+        const linkRegex = /(https?:\/\/[^\s]+)/i;
        return linkRegex.test(message);
     }
 
@@ -250,6 +433,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const options = {
         keys: ['message'],
         includeScore: true,
+         useExtendedSearch: true
       };
 
         fuse = new Fuse(chatData, options);
@@ -262,7 +446,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
    function filterResults(results, filters){
-
      return results.filter((result) => {
           const item = result.item;
         if (filters.senders && filters.senders.length > 0 && !filters.senders.includes(item.sender)) {
@@ -283,31 +466,72 @@ document.addEventListener('DOMContentLoaded', () => {
 
         }
 
-
-
-
-          if (filters.link === "hasLink" && !item.hasLink) {
+       if (filters.domains && filters.domains.length > 0){
+           if (filters.link === "hasLink" && !filters.domains.some(domain => item.message.includes(domain))) {
+                return false
+            }
+             if (filters.link === "any" && filters.domains.some(domain => item.message.includes(domain))){
+             } else if (filters.link === "any"){
+            }   else {
+           if (filters.domains && filters.domains.length > 0 && filters.link === "hasLink" && !filters.domains.some(domain => item.message.includes(domain))) {
+                   return false
+            }
+           }
+       } else {
+             if (filters.link === "hasLink" && !item.hasLink) {
            return false
         }
-        if(filters.link === "noLink" && item.hasLink){
+          if(filters.link === "noLink" && item.hasLink){
            return false;
         }
+       }
 
+      if (filters.beforeDate) {
+        const messageDate = new Date(item.timestamp);
+        const beforeDate = new Date(filters.beforeDate);
+          if (messageDate >= beforeDate){
+            return false;
+         }
 
+      }
+
+        if (filters.afterDate) {
+            const messageDate = new Date(item.timestamp);
+             const afterDate = new Date(filters.afterDate);
+              if (messageDate <= afterDate){
+            return false;
+         }
+       }
         return true;
       });
   }
 
 
 
-   function displayResults(results) {
-        searchResultsDiv.innerHTML = '';
-        searchResultsDiv.classList.remove("hidden")
-        if (results.length === 0){
-             searchResultsDiv.innerHTML = '<p>No results</p>';
+    function displayResults(results) {
+
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+           const paginatedResults = results.slice(startIndex, endIndex);
+
+         if (currentPage === 1) {
+            searchResultsDiv.innerHTML = '';
+            searchResultsDiv.classList.remove("hidden");
+        }
+
+
+      if (paginatedResults.length === 0 && currentPage === 1){
+            searchResultsDiv.innerHTML = '<p>No results</p>';
+              loadMoreBtn.classList.add("hidden");
            return;
         }
-      results.forEach((result) => {
+        if (paginatedResults.length === 0 && currentPage > 1){
+                loadMoreBtn.classList.add("hidden");
+           return;
+        }
+
+
+      paginatedResults.forEach((result) => {
             const item = result.item;
             const element = document.createElement('div');
             element.classList.add("result-item")
@@ -319,11 +543,31 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
           searchResultsDiv.appendChild(element);
         });
+
+        if (endIndex < results.length){
+               loadMoreBtn.classList.remove("hidden");
+            } else {
+               loadMoreBtn.classList.add("hidden");
+        }
     }
 
+    function getSelectedDomains() {
+        const domainCheckboxes = document.querySelectorAll('.domain-filter input[type="checkbox"]:checked');
+        return Array.from(domainCheckboxes).map(checkbox => checkbox.value);
+     }
 
-   function setupFilters() {
+    function setupFilters() {
+         domainFilterContainer.innerHTML = '';
 
+          Object.keys(linkDomains).forEach(domain => {
+             const label = document.createElement("label");
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.value = domain;
+             label.appendChild(checkbox);
+              label.appendChild(document.createTextNode(`${domain} (${linkDomains[domain]})`));
+              domainFilterContainer.appendChild(label);
+          });
       senderFilter.innerHTML = '';
         Object.keys(senderCounts).forEach(sender => {
             const option = document.createElement('option');
