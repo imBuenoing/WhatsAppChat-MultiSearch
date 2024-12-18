@@ -21,9 +21,9 @@ body {
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   position: relative;
   z-index: 100;
-    position: sticky; /* Make search bar sticky */
-    top: 0;
-    background-color: #f4f4f4;
+  position: sticky;
+  top: 0;
+  background-color: #f4f4f4;
 }
 .search-container input{
    padding: 8px;
@@ -51,6 +51,9 @@ body {
 .chat-history .conversation-message{
        margin-bottom: 10px;
 }
+.chat-history .conversation-message.highlighted{
+    background-color: #e0f7fa;
+}
 .sidebar h2{
     margin-bottom: 20px;
 }
@@ -59,7 +62,7 @@ body {
     flex: 1;
     padding: 20px;
     overflow-y: auto;
-    position: relative;
+     position: relative;
 }
 
 .hidden {
@@ -82,9 +85,6 @@ input[type="file"] {
     border-bottom: 1px solid #eee;
     padding: 10px 0;
        cursor: pointer;
-}
-.result-item.highlighted {
-    background-color: #e0f7fa; /* Light highlight color */
 }
 
 .tooltip-trigger{
@@ -173,11 +173,11 @@ select[multiple] {
            border-radius: 4px;
       }
   .floating-buttons {
-     position: absolute;
-    bottom: 10px;
-    left: 10px;
-     display: flex;
-    gap: 10px;
+    display: flex;
+      gap: 10px;
+      position: absolute;
+    bottom: 20px;
+    left: 20px;
 
 }
 
