@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Chat Analyzer</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <div class="container">
+        <h1>WhatsApp Chat Analyzer</h1>
+        <input type="file" id="chatFile" accept=".txt">
+        <div id="loading"></div>
+
+        <div id="filters" class="hidden">
+          <div class="filter-container">
+              <label for="senderFilter">From:</label>
+               <select id="senderFilter" multiple></select>
+           </div>
+             <div class="filter-container">
+                <label for="fileFilter">Files:</label>
+                <select id="fileFilter" multiple></select>
+           </div>
+
+        </div>
+        <div class="search-container hidden" >
+          <input type="text" id="searchBox" placeholder="Search messages..." autocomplete="off">
+          <span class="tooltip-trigger" title="Supported Operators: from:sender, file:extension (e.g file:jpg,pdf), text:search terms">?</span>
+
+        </div>
+
+
+        <div id="searchResults" class="hidden"></div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
