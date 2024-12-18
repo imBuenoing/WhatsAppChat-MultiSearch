@@ -524,6 +524,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Donate button logic
     donateBtn.addEventListener('click', () => {
-       window.open('https://example.com/donate', '_blank');
+       window.open('https://buymeacoffee.com/juino', '_blank');
     });
 });
