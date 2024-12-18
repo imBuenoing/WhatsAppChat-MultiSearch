@@ -11,32 +11,12 @@ body {
     height: 100vh;
 }
 
-.sidebar {
-    width: 280px;
-     background-color: #f9f9f9;
-    padding: 20px;
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
-    border-right: 1px solid #e0e0e0;
-     overflow-y: auto;
-}
-.sidebar-section{
-    margin-bottom: 20px;
-}
-.sidebar h2{
-    margin-bottom: 20px;
-}
-
-.content {
-    flex: 1;
-    padding: 20px;
-     overflow-y: auto;
-}
 .search-container{
   padding: 20px;
   background-color: white;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   position: relative;
-    margin-bottom: 20px;
+  z-index: 100;
 
 }
 .search-container input{
@@ -46,10 +26,28 @@ body {
       margin-right: 10px;
   width: 80%;
 }
+.sidebar {
+    width: 280px;
+    background-color: #f9f9f9;
+    padding: 20px;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+    border-right: 1px solid #e0e0e0;
+     overflow-y: auto;
+}
+
+.sidebar h2{
+    margin-bottom: 20px;
+}
+
+.content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
 .hidden {
     display: none;
 }
-
 input[type="file"] {
     margin: 10px 0;
     display: block;
@@ -68,10 +66,8 @@ input[type="file"] {
     padding: 10px 0;
 }
 
-
-
 .tooltip-trigger{
-    cursor: help;
+  cursor: help;
     font-size: 1.2em;
     font-weight: bold;
     position: relative;
@@ -79,7 +75,7 @@ input[type="file"] {
 }
 
 #tooltip{
-    position: absolute;
+  position: absolute;
     background-color: #333;
     color: white;
     padding: 10px;
@@ -91,12 +87,28 @@ input[type="file"] {
     max-width: 280px;
 }
 
-
-
 .filter-container {
   margin-bottom: 10px;
   display: flex;
   align-items: center;
+  flex-direction: column;
+}
+.filter-header{
+     display: flex;
+    align-items: center;
+         margin-bottom: 5px;
+
+}
+.filter-header label {
+    margin-right: 10px;
+    min-width: 40px;
+
+}
+.filter-header select{
+     padding: 8px;
+    border: 1px solid #ccc;
+     border-radius: 4px;
+
 }
 
 .filter-container label {
@@ -113,26 +125,17 @@ input[type="file"] {
 .filter-container select:hover{
   border-color: #333;
 }
+
 select[multiple] {
     height: 100px;
-  overflow-y: scroll;
-  display: block;
-  margin-top: 5px;
+     overflow-y: scroll;
+    display: block;
+     margin-top: 5px;
 }
-    .filter-header {
-     display: flex;
-    align-items: center;
-         margin-bottom: 5px;
-     }
+.sidebar-section{
+    margin-bottom: 20px;
+}
 
-.filter-header label {
-      margin-right: 10px;
-    }
-    .filter-header select{
-        padding: 8px;
-        border: 1px solid #ccc;
-          border-radius: 4px;
-       }
  .date-range-filter {
     display: flex;
      flex-direction: column;
@@ -174,30 +177,7 @@ select[multiple] {
    display: block;
     margin: 5px 0;
 }
-.domain-filter select {
-    margin-left: 5px;
-    padding: 8px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-     display: block;
-        margin-bottom: 5px;
-}
-.domain-filter select:hover{
-      border-color: #333;
-}
-#resetFiltersBtn {
-    padding: 10px 15px;
-    background-color: #e74c3c;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-top: 20px;
-    align-self: flex-start;
-  display: block;
 
-}
-
-#resetFiltersBtn:hover {
-    background-color: #c0392b;
+.domain-filter input {
+    margin-right: 5px;
 }
