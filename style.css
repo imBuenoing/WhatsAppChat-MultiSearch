@@ -10,12 +10,33 @@ body {
     display: flex;
     height: 100vh;
 }
+
+.sidebar {
+    width: 280px;
+     background-color: #f9f9f9;
+    padding: 20px;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+    border-right: 1px solid #e0e0e0;
+     overflow-y: auto;
+}
+.sidebar-section{
+    margin-bottom: 20px;
+}
+.sidebar h2{
+    margin-bottom: 20px;
+}
+
+.content {
+    flex: 1;
+    padding: 20px;
+     overflow-y: auto;
+}
 .search-container{
   padding: 20px;
   background-color: white;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   position: relative;
-  z-index: 100;
+    margin-bottom: 20px;
 
 }
 .search-container input{
@@ -25,29 +46,16 @@ body {
       margin-right: 10px;
   width: 80%;
 }
-.sidebar {
-    width: 300px;
-    background-color: #eee;
-    padding: 20px;
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-}
-
-.sidebar h2{
-    margin-bottom: 20px;
-}
-
-.content {
-    flex: 1;
-    padding: 20px;
-    overflow-y: auto;
-}
-
 .hidden {
     display: none;
 }
+
 input[type="file"] {
     margin: 10px 0;
     display: block;
+     padding: 8px;
+         border: 1px solid #ccc;
+           border-radius: 4px;
 }
 
 #searchResults{
@@ -61,8 +69,9 @@ input[type="file"] {
 }
 
 
+
 .tooltip-trigger{
-  cursor: help;
+    cursor: help;
     font-size: 1.2em;
     font-weight: bold;
     position: relative;
@@ -70,7 +79,7 @@ input[type="file"] {
 }
 
 #tooltip{
-  position: absolute;
+    position: absolute;
     background-color: #333;
     color: white;
     padding: 10px;
@@ -81,6 +90,7 @@ input[type="file"] {
     z-index: 1;
     max-width: 280px;
 }
+
 
 
 .filter-container {
@@ -103,12 +113,8 @@ input[type="file"] {
 .filter-container select:hover{
   border-color: #333;
 }
-
 select[multiple] {
     height: 100px;
-}
-.sidebar-section{
-    margin-bottom: 20px;
 }
 
  .date-range-filter {
