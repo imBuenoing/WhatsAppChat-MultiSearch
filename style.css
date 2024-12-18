@@ -181,3 +181,7 @@ select[multiple] {
 .domain-filter input {
     margin-right: 5px;
 }
+
+select[multiple] {
+       width: 100%;
+}
