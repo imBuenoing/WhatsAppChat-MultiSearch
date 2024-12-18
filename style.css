@@ -115,8 +115,24 @@ input[type="file"] {
 }
 select[multiple] {
     height: 100px;
+  overflow-y: scroll;
+  display: block;
+  margin-top: 5px;
 }
+    .filter-header {
+     display: flex;
+    align-items: center;
+         margin-bottom: 5px;
+     }
 
+.filter-header label {
+      margin-right: 10px;
+    }
+    .filter-header select{
+        padding: 8px;
+        border: 1px solid #ccc;
+          border-radius: 4px;
+       }
  .date-range-filter {
     display: flex;
      flex-direction: column;
@@ -158,7 +174,30 @@ select[multiple] {
    display: block;
     margin: 5px 0;
 }
+.domain-filter select {
+    margin-left: 5px;
+    padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+     display: block;
+        margin-bottom: 5px;
+}
+.domain-filter select:hover{
+      border-color: #333;
+}
+#resetFiltersBtn {
+    padding: 10px 15px;
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 20px;
+    align-self: flex-start;
+  display: block;
 
-.domain-filter input {
-    margin-right: 5px;
+}
+
+#resetFiltersBtn:hover {
+    background-color: #c0392b;
 }
