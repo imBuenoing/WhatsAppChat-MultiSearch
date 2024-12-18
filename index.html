@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png" type="image/x-icon">
-    <!-- Include Fuse.js from CDN (specific link) -->
     <script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.js"></script>
 </head>
 <body>
@@ -26,13 +25,20 @@
                 <select id="fileFilter" multiple></select>
            </div>
 
+           <div class="filter-container">
+                <label for="linkFilter">Links:</label>
+                  <select id="linkFilter">
+                  <option value="any">Any</option>
+                  <option value="hasLink">Has Link</option>
+                    <option value="noLink">No Link</option>
+                  </select>
+           </div>
         </div>
+
         <div class="search-container hidden" >
           <input type="text" id="searchBox" placeholder="Search messages..." autocomplete="off">
-          <span class="tooltip-trigger" title="Supported Operators: from:sender, file:extension (e.g file:jpg,pdf), text:search terms">?</span>
-
+          <span class="tooltip-trigger" title="Supported Operators: AND, OR, NOT (e.g. hello AND world, cat OR dog, NOT cheese)">?</span>
         </div>
-
 
         <div id="searchResults" class="hidden"></div>
     </div>
