@@ -19,21 +19,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetFiltersBtn = document.getElementById('resetFiltersBtn');
     const domainFilterDiv = document.querySelector('.domain-filter');
     const chatHistoryContent = document.getElementById('chatHistoryContent');
-     const scrollToTopBtn = document.getElementById('scrollToTopBtn');
+    const scrollToTopBtn = document.getElementById('scrollToTopBtn');
     const donateBtn = document.getElementById('donateBtn');
-
+    const contentDiv = document.querySelector('.content');
 
     let chatData = [];
     let filteredChatData = [];
     let currentSearchTerm = '';
-     let itemsPerPage = 0; // Set itemsPerPage dynamically
-     let currentPage = 1;
-     let fuse;
-      let initialResultsDisplayed = false;
-    let displayedResultItems = [];
+     let itemsPerPage = 10;
+    let currentPage = 1;
+    let fuse;
+    let visibleResults = 0;
 
-
-    // Function to extract date string in MMM YYYY format
+        // Function to extract date string in MMM YYYY format
     function formatDate(dateString) {
       const date = new Date(dateString);
       return date.toLocaleString('default', { month: 'short', year: 'numeric' });
@@ -173,6 +171,8 @@ document.addEventListener('DOMContentLoaded', () => {
            try {
                 const text = await file.text();
                  chatData = parseChat(text);
+                   // Sort messages by date descending
+                chatData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
 
                 const chatInfo = extractChatInfo(chatData);
@@ -184,10 +184,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     createDomainFilters(chatInfo.links)
 
                  filteredChatData = [...chatData];
-                   itemsPerPage = Math.floor(searchResultsDiv.offsetHeight / 60);
-
-                 displayResults(filteredChatData);
-                displayFullChatHistory();
+                 displayInitialResults(filteredChatData);
+                 displayFullChatHistory();
                 loadingDiv.textContent = 'File Loaded';
              } catch (error) {
                 loadingDiv.textContent = 'Error loading file.';
@@ -297,8 +295,8 @@ document.addEventListener('DOMContentLoaded', () => {
                   filteredResults = filteredResults.filter(message => new Date(message.timestamp) >= afterDate);
               }
              filteredChatData =  filteredResults;
-             currentPage = 1;
-               displayResults(filteredChatData);
+              currentPage = 1;
+              displayInitialResults(filteredChatData);
         }
 
     // Event listeners for filter dropdowns
@@ -380,13 +378,13 @@ document.addEventListener('DOMContentLoaded', () => {
         linkFilter.value = '';
         dateFilterType.value = 'any';
         dateFilter.value = '';
-         beforeDateInput.value = '';
+        beforeDateInput.value = '';
         afterDateInput.value = '';
         domainFilterDiv.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
        filteredChatData = [...chatData];
-        currentPage = 1;
-      displayResults(filteredChatData);
-           displayFullChatHistory();
+       currentPage = 1;
+        displayInitialResults(filteredChatData);
+        displayFullChatHistory();
     });
 
 
@@ -406,7 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const filteredSearchResults = applyFiltersToSearchResults(matchedMessages);
 
-           displayResults(filteredSearchResults);
+            displayInitialResults(filteredSearchResults);
          } else {
            applyFilters();
 
@@ -506,75 +504,74 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // Function to display search results
-     function displayResults(messages) {
-            searchResultsDiv.innerHTML = '';
+      function displayInitialResults(messages){
+              searchResultsDiv.innerHTML = '';
             searchResultsDiv.classList.remove('hidden');
 
-            // Sort messages by date descending
-            const sortedMessages = [...messages].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            visibleResults = 0;
 
-             if(sortedMessages.length === 0){
-                const noResult = document.createElement('div');
+            if(messages.length === 0){
+                   const noResult = document.createElement('div');
                   noResult.textContent = 'No results found.';
                   searchResultsDiv.appendChild(noResult);
                 loadMoreBtn.classList.add('hidden');
+
                return;
              }
 
+             displayMoreResults(messages);
+      }
 
-             if(!initialResultsDisplayed){
-                   itemsPerPage = Math.floor(searchResultsDiv.offsetHeight / 60);
-                    initialResultsDisplayed = true;
-             }
-                const startIndex = (currentPage - 1) * itemsPerPage;
-                const endIndex = startIndex + itemsPerPage;
-                 const paginatedMessages = sortedMessages.slice(startIndex, endIndex);
+    // Function to display search results
+    function displayMoreResults(messages) {
 
 
-                const conversations = groupMessagesByConversation(paginatedMessages);
+           const startIndex = visibleResults;
+            const endIndex = startIndex + itemsPerPage;
+             const paginatedMessages = messages.slice(startIndex, endIndex);
+
+            const conversations = groupMessagesByConversation(paginatedMessages);
 
 
-               conversations.forEach(conversation => {
-                    const firstMessage = conversation[0];
-                     const resultItem = document.createElement('div');
-                      resultItem.classList.add('result-item');
-                    resultItem.textContent = `[${firstMessage.timestamp}] ${firstMessage.sender}: ${firstMessage.text}`;
 
-                   resultItem.addEventListener('click', () => expandConversation(conversation, firstMessage.timestamp));
-                  searchResultsDiv.appendChild(resultItem);
-                   displayedResultItems.push(resultItem);
+            conversations.forEach(conversation => {
 
-                });
+             const firstMessage = conversation[0];
+                const resultItem = document.createElement('div');
+                resultItem.classList.add('result-item');
+                const messageContent = conversation.map(message => `[${message.timestamp}] ${message.sender}: ${message.text}`).join('\n');
+                resultItem.textContent = `[${firstMessage.timestamp}] ${firstMessage.sender}: ${firstMessage.text}`;
+                resultItem.addEventListener('click', () => expandConversation(conversation, firstMessage.timestamp));
 
-             if (sortedMessages.length > endIndex) {
-                loadMoreBtn.classList.remove('hidden');
+                 searchResultsDiv.appendChild(resultItem);
+
+            });
+              visibleResults += paginatedMessages.length;
+            if (messages.length > visibleResults) {
+                 loadMoreBtn.classList.remove('hidden');
              } else {
                 loadMoreBtn.classList.add('hidden');
             }
-
-        }
-
-
+     }
 
           loadMoreBtn.addEventListener('click', () => {
-           currentPage++;
-            displayResults(filteredChatData);
+           displayMoreResults(filteredChatData);
        });
-        // Function to expand a conversation
+       // Function to expand a conversation
     function expandConversation(conversation, selectedTimestamp) {
 
-          displayedResultItems.forEach(item => item.classList.remove('highlighted'))
-           const selectedMessageElement = document.getElementById(`message-${selectedTimestamp.replace(/[\s:,]/g, '-')}`);
+         // Remove highlight from any previously highlighted message
+            chatHistoryContent.querySelectorAll('.conversation-message.highlighted').forEach(el => el.classList.remove('highlighted'));
+
+           // Scroll to the selected message
+         const selectedMessageElement = document.getElementById(`message-${selectedTimestamp.replace(/[\s:,]/g, '-')}`);
              if(selectedMessageElement){
-                   selectedMessageElement.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                     });
-                selectedMessageElement.classList.add('highlighted')
-
-            }
-
+            selectedMessageElement.scrollIntoView({
+             behavior: 'smooth',
+            block: 'start'
+           });
+                  selectedMessageElement.classList.add('highlighted');
+         }
 
     }
 
@@ -602,13 +599,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
      });
     // Scroll to top logic
-       scrollToTopBtn.addEventListener('click', () => {
-             searchResultsDiv.scrollTo({ top: 0, behavior: 'smooth' });
-
-    });
+    scrollToTopBtn.addEventListener('click', () => {
+        searchResultsDiv.scrollTo({ top: 0, behavior: 'smooth' });
+     });
 
     // Donate button logic
     donateBtn.addEventListener('click', () => {
-       window.open('https://buymeacoffee.com/juino', '_blank');
+       window.open('https://example.com/donate', '_blank');
     });
+
+    // Set initial visible results based on available height
+      function setInitialItemsPerPage() {
+            const searchResultsHeight = searchResultsDiv.clientHeight;
+            const resultItemHeight = 37 //estimated using the inspect tool
+             itemsPerPage = Math.floor(searchResultsHeight/ resultItemHeight);
+            console.log(itemsPerPage);
+      }
+
+        window.addEventListener('resize', setInitialItemsPerPage);
+        setInitialItemsPerPage();
 });
