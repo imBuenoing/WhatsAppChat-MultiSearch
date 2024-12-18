@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const afterDateInput = document.getElementById('afterDate');
     const resetFiltersBtn = document.getElementById('resetFiltersBtn');
     const domainFilterDiv = document.querySelector('.domain-filter');
+     const chatHistoryContent = document.getElementById('chatHistoryContent');
     const scrollToTopBtn = document.getElementById('scrollToTopBtn');
     const donateBtn = document.getElementById('donateBtn');
 
@@ -28,6 +29,13 @@ document.addEventListener('DOMContentLoaded', () => {
      const itemsPerPage = 20;
      let currentPage = 1;
      let fuse;
+
+
+        // Function to extract date string in MMM YYYY format
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleString('default', { month: 'short', year: 'numeric' });
+    }
 
 
       // Function to group messages by conversation
@@ -64,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
            const senders = new Map();
            const files = new Map();
            const links = new Map();
-           const dates = new Map();
+            const dates = new Map();
 
 
             messages.forEach(message => {
@@ -95,8 +103,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // Extract date
-                  const date = message.timestamp.split(',')[0];
-                     dates.set(date, (dates.get(date) || 0) +1 );
+                  const date = formatDate(message.timestamp)
+                 dates.set(date, (dates.get(date) || 0) +1 );
 
 
             });
@@ -171,12 +179,11 @@ document.addEventListener('DOMContentLoaded', () => {
                  displayFilterOptions(fileFilter, chatInfo.files);
                   displayFilterOptions(linkFilter, chatInfo.links);
                    displayFilterOptions(dateFilter, chatInfo.dates);
-                   createDomainFilters(chatInfo.links)
-
-
+                    createDomainFilters(chatInfo.links)
 
                  filteredChatData = [...chatData];
                  displayResults(filteredChatData);
+                displayFullChatHistory();
                 loadingDiv.textContent = 'File Loaded';
              } catch (error) {
                 loadingDiv.textContent = 'Error loading file.';
@@ -269,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   const selectedDates = Array.from(dateFilter.selectedOptions).map(option => option.value);
 
                     filteredResults = filteredResults.filter(message => {
-                           const messageDate = message.timestamp.split(',')[0]
+                           const messageDate = formatDate(message.timestamp)
                           return selectedDates.includes(messageDate);
                      });
               }
@@ -375,7 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
        filteredChatData = [...chatData];
         currentPage = 1;
         displayResults(filteredChatData);
-
+           displayFullChatHistory();
     });
 
 
@@ -468,7 +475,7 @@ document.addEventListener('DOMContentLoaded', () => {
               if(dateFilterType.value === 'selected' && dateFilter.selectedOptions.length > 0 ){
                   const selectedDates = Array.from(dateFilter.selectedOptions).map(option => option.value);
                     filteredResults = filteredResults.filter(message => {
-                           const messageDate = message.timestamp.split(',')[0]
+                         const messageDate = formatDate(message.timestamp)
                           return selectedDates.includes(messageDate);
                      });
               }
@@ -523,8 +530,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const resultItem = document.createElement('div');
                 resultItem.classList.add('result-item');
                 const messageContent = conversation.map(message => `[${message.timestamp}] ${message.sender}: ${message.text}`).join('\n');
-                resultItem.textContent = `[${firstMessage.timestamp}] ${firstMessage.sender}: ${firstMessage.text.substring(0, 100)}...`;
-                 resultItem.addEventListener('click', () => expandConversation(conversation, firstMessage.timestamp));
+                resultItem.textContent = `[${firstMessage.timestamp}] ${firstMessage.sender}: ${firstMessage.text}`;
+                resultItem.addEventListener('click', () => expandConversation(conversation, firstMessage.timestamp));
 
                  searchResultsDiv.appendChild(resultItem);
 
@@ -546,18 +553,6 @@ document.addEventListener('DOMContentLoaded', () => {
        // Function to expand a conversation
     function expandConversation(conversation, selectedTimestamp) {
 
-      searchResultsDiv.innerHTML = '';
-
-        const conversationDiv = document.createElement('div');
-         conversationDiv.classList.add('conversation');
-        conversation.forEach(message => {
-           const messageDiv = document.createElement('div');
-            messageDiv.textContent = `[${message.timestamp}] ${message.sender}: ${message.text}`;
-             messageDiv.id = `message-${message.timestamp.replace(/[\s:,]/g, '-')}` // remove space, colon and comma for a valid ID
-           conversationDiv.appendChild(messageDiv);
-        });
-
-       searchResultsDiv.appendChild(conversationDiv);
 
            // Scroll to the selected message
          const selectedMessageElement = document.getElementById(`message-${selectedTimestamp.replace(/[\s:,]/g, '-')}`);
@@ -569,6 +564,20 @@ document.addEventListener('DOMContentLoaded', () => {
          }
 
     }
+
+       // Function to display the full chat history
+        function displayFullChatHistory(){
+             chatHistoryContent.innerHTML = '';
+           if(chatData.length === 0 ) return;
+            chatData.forEach(message => {
+                  const messageDiv = document.createElement('div');
+                 messageDiv.classList.add('conversation-message');
+                 messageDiv.textContent = `[${message.timestamp}] ${message.sender}: ${message.text}`;
+                  messageDiv.id = `message-${message.timestamp.replace(/[\s:,]/g, '-')}` // remove space, colon and comma for a valid ID
+                chatHistoryContent.appendChild(messageDiv);
+             });
+             chatHistoryContent.scrollTop = chatHistoryContent.scrollHeight;
+        }
    // Tooltip logic
       tooltipTrigger.addEventListener('click', (event) => {
         tooltip.classList.toggle('hidden');
