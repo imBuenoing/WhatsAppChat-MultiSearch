@@ -13,51 +13,70 @@
     <div class="app-container">
         <aside class="sidebar">
             <div class="sidebar-section">
-            <input type="file" id="chatFile" accept=".txt">
+                <input type="file" id="chatFile" accept=".txt">
                 <div id="loading"></div>
-              </div>
-               <div class="sidebar-section">
-                  <label for="senderFilter">From:</label>
-                  <select id="senderFilter" multiple></select>
-              </div>
-            <div class="sidebar-section">
-                <label for="fileFilter">Files:</label>
-                <select id="fileFilter" multiple>
-                    <option value="notFile">Not File Related</option>
-                </select>
             </div>
             <div class="sidebar-section">
-                <label for="linkFilter">Links:</label>
-                  <select id="linkFilter">
-                      <option value="any">Any</option>
-                      <option value="hasLink">Has Link</option>
-                        <option value="noLink">No Link</option>
-                    </select>
-                       <div class="domain-filter">
-                        </div>
-                </div>
-               <div class="sidebar-section">
-                  <label for="dateFilter">Date:</label>
-                     <select id="dateFilter" multiple></select>
-               </div>
-             <div class="sidebar-section date-range-filter">
-              <label for="beforeDate">Before:</label>
-              <input type="date" id="beforeDate" >
-              <label for="afterDate">After:</label>
-                <input type="date" id="afterDate">
+                 <div class="filter-header">
+                    <label for="senderFilter">From:</label>
+                    <select id="senderFilterType">
+                         <option value="any">Any</option>
+                          <option value="selected">Selected</option>
+                     </select>
+                  </div>
+                <select id="senderFilter" multiple></select>
+            </div>
+             <div class="sidebar-section">
+                   <div class="filter-header">
+                      <label for="fileFilter">File:</label>
+                      <select id="fileFilterType">
+                         <option value="selected">Selected</option>
+                           <option value="notFile">Not File Related</option>
 
-           </div>
+                      </select>
+                  </div>
+                <select id="fileFilter" multiple></select>
+             </div>
+             <div class="sidebar-section">
+                    <div class="filter-header">
+                    <label for="linkFilter">Links:</label>
+                    <select id="linkFilterType">
+                         <option value="any">Any</option>
+                            <option value="selected">Selected</option>
+                     </select>
+                   </div>
+                       <select id="linkFilter" multiple></select>
+                         <div class="domain-filter"></div>
+                </div>
+              <div class="sidebar-section">
+                   <div class="filter-header">
+                      <label for="dateFilter">Date:</label>
+                      <select id="dateFilterType">
+                            <option value="any">Any</option>
+                            <option value="selected">Selected</option>
+                      </select>
+                    </div>
+                  <select id="dateFilter" multiple></select>
+               </div>
+                <div class="sidebar-section date-range-filter">
+                     <label for="beforeDate">Before:</label>
+                      <input type="date" id="beforeDate" >
+                      <label for="afterDate">After:</label>
+                       <input type="date" id="afterDate">
+
+                </div>
+               <button id="resetFiltersBtn">Reset Filters</button>
         </aside>
         <main class="content">
-           <div class="search-container">
-               <input type="text" id="searchBox" placeholder="Search messages..." autocomplete="off">
+            <div class="search-container">
+                <input type="text" id="searchBox" placeholder="Search messages..." autocomplete="off">
                 <span class="tooltip-trigger">?</span>
-                     <div id="tooltip" class="hidden">
-                    Supported Operators:<br>
-                    <code>"phrase"</code> Search for an exact phrase.<br>
-                     <code>AND, OR, NOT</code> Boolean logic. <br>
-                    Click outside to dismiss.
-                </div>
+                <div id="tooltip" class="hidden">
+                  Supported Operators:<br>
+                  <code>"phrase"</code> Search for an exact phrase.<br>
+                  <code>AND, OR, NOT</code> Boolean logic.<br>
+                 Click outside to dismiss.
+               </div>
             </div>
             <div id="searchResults" class="hidden"></div>
             <button id="loadMoreBtn" class="hidden">Load More</button>
