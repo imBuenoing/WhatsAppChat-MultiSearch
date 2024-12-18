@@ -4,12 +4,12 @@ body {
     padding: 0;
     background-color: #f4f4f4;
     position: relative;
-      display: flex;
+    display: flex;
     flex-direction: column;
-
 }
+
 .app-container {
-  display: flex;
+    display: flex;
     flex: 1;
     height: auto; /* Allow content to determine height */
 }
@@ -36,15 +36,17 @@ body {
     padding: 20px;
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
     border-right: 1px solid #e0e0e0;
-     overflow-y: auto;
+    overflow-y: auto;
     flex: 0 0 280px;
+    height: 100vh; /* Set height to 100% of viewport height */
 }
 .chat-history{
     flex: 0 0 350px;
      background-color: #f9f9f9;
      padding: 20px;
     border-left: 1px solid #e0e0e0;
-    overflow-y: auto;
+     overflow-y: auto;
+    height: 100vh;
 }
 .chat-history .conversation-message{
        margin-bottom: 10px;
@@ -57,6 +59,9 @@ body {
     flex: 1;
     padding: 20px;
     overflow-y: auto;
+        height: 100vh;
+
+
 }
 
 .hidden {
@@ -185,17 +190,7 @@ select[multiple] {
 .floating-buttons button:hover {
     background-color: #2980b9;
 }
-.domain-filter{
-    margin-left: 20px;
-}
-.domain-filter label{
-   display: block;
-    margin: 5px 0;
-}
 
-.domain-filter input {
-    margin-right: 5px;
-}
 
 select[multiple] {
        width: 100%;
