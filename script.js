@@ -19,8 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadMoreBtn = document.getElementById('loadMoreBtn');
     const scrollToTopBtn = document.getElementById('scrollToTopBtn');
     const donateBtn = document.getElementById('donateBtn');
-    const filtersDiv = document.querySelector(".sidebar");
-       const searchContainerDiv = document.querySelector(".search-container");
+     const filtersDiv = document.querySelector(".sidebar");
+        const searchContainerDiv = document.querySelector(".search-container");
     const senderFilter = document.getElementById('senderFilter');
     const fileFilter = document.getElementById('fileFilter');
      const dateFilter = document.getElementById('dateFilter');
@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     chatFile.addEventListener('change', async (event) => {
         loadingDiv.textContent = 'Processing chat file...';
         filtersDiv.classList.add('hidden');
-        searchContainerDiv.classList.add('hidden');
+       searchContainerDiv.classList.add('hidden');
         searchResultsDiv.classList.add("hidden");
         loadMoreBtn.classList.add("hidden");
 
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
           await saveChatData(await openDatabase(), chatData);
              setupFilters();
              setupSearch();
-         filtersDiv.classList.remove('hidden');
+          filtersDiv.classList.remove('hidden');
             searchContainerDiv.classList.remove('hidden');
          loadingDiv.textContent = 'Chat loaded successfully';
 
@@ -327,7 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
           chatData = savedData;
           setupFilters();
           setupSearch();
-        filtersDiv.classList.remove('hidden');
+       filtersDiv.classList.remove('hidden');
         searchContainerDiv.classList.remove('hidden');
             loadingDiv.textContent = 'Chat loaded from storage';
           } else {
@@ -356,7 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
        });
     }
 
-      function parseChat(chatText) {
+    function parseChat(chatText) {
             const lines = chatText.split("\n");
             const chatData = [];
             const senderCounts = {};
@@ -400,17 +400,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             return { chatData, senderCounts, fileCounts, dateCounts, linkDomains };
         }
-
-      function extractDomain(message) {
+    function extractDomain(message) {
         const urlRegex = /(https?:\/\/[^\s/]+)/i;
         const match = message.match(urlRegex);
         if (match) {
-              try {
-                   const url = new URL(match[0]);
-               return url.hostname.replace(/^www\./, '')
-                 } catch (e) {
+            try {
+                const url = new URL(match[0]);
+                return url.hostname.replace(/^www\./, '');
+            } catch (e) {
                 return null;
-                 }
+            }
         }
           return null;
 
@@ -418,9 +417,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function messageContainsLink(message) {
         const linkRegex = /(https?:\/\/[^\s]+)/i;
-       return linkRegex.test(message);
+        return linkRegex.test(message);
     }
-
 
     function extractFileExtensions(message) {
       const regex = /\.(jpg|jpeg|png|gif|pdf|mp4|mov|avi|doc|docx|xls|xlsx|txt)/gi;
@@ -428,8 +426,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return matches.map(match => match.slice(1));
     }
 
-
-  function setupSearch() {
+   function setupSearch() {
       const options = {
         keys: ['message'],
         includeScore: true,
@@ -489,23 +486,22 @@ document.addEventListener('DOMContentLoaded', () => {
       if (filters.beforeDate) {
         const messageDate = new Date(item.timestamp);
         const beforeDate = new Date(filters.beforeDate);
-          if (messageDate >= beforeDate){
+        if (messageDate >= beforeDate){
             return false;
          }
 
       }
 
-        if (filters.afterDate) {
-            const messageDate = new Date(item.timestamp);
-             const afterDate = new Date(filters.afterDate);
-              if (messageDate <= afterDate){
+      if (filters.afterDate) {
+           const messageDate = new Date(item.timestamp);
+            const afterDate = new Date(filters.afterDate);
+             if (messageDate <= afterDate){
             return false;
-         }
+        }
        }
         return true;
       });
   }
-
 
 
     function displayResults(results) {
@@ -557,17 +553,18 @@ document.addEventListener('DOMContentLoaded', () => {
      }
 
     function setupFilters() {
-         domainFilterContainer.innerHTML = '';
+        domainFilterContainer.innerHTML = '';
 
           Object.keys(linkDomains).forEach(domain => {
-             const label = document.createElement("label");
+            const label = document.createElement("label");
             const checkbox = document.createElement("input");
             checkbox.type = "checkbox";
             checkbox.value = domain;
              label.appendChild(checkbox);
               label.appendChild(document.createTextNode(`${domain} (${linkDomains[domain]})`));
-              domainFilterContainer.appendChild(label);
+             domainFilterContainer.appendChild(label);
           });
+
       senderFilter.innerHTML = '';
         Object.keys(senderCounts).forEach(sender => {
             const option = document.createElement('option');
@@ -598,9 +595,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 dateFilter.appendChild(option);
 
           });
-
-
     }
+
 
       function openDatabase() {
           return new Promise((resolve, reject) => {
