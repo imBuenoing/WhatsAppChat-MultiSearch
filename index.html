@@ -45,6 +45,8 @@
                       </select>
                 </div>
                  <select id="linkFilter" multiple></select>
+                  <div class="domain-filter"></div>
+
             </div>
              <div class="sidebar-section">
                 <div class="filter-header">
@@ -66,7 +68,7 @@
             </div>
               <button id="resetFiltersBtn">Reset Filters</button>
         </aside>
-        <main class="content">
+       <main class="content">
            <div class="search-container">
                <input type="text" id="searchBox" placeholder="Search messages..." autocomplete="off">
                 <span class="tooltip-trigger">?</span>
@@ -80,6 +82,9 @@
             <div id="searchResults" class="hidden"></div>
             <button id="loadMoreBtn" class="hidden">Load More</button>
         </main>
+         <aside class="chat-history">
+            <div id="chatHistoryContent"></div>
+        </aside>
     </div>
        <div class="floating-buttons">
         <button id="scrollToTopBtn">↑</button>
