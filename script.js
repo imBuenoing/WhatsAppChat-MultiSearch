@@ -7,11 +7,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchContainerDiv = document.querySelector(".search-container");
     const senderFilter = document.getElementById('senderFilter');
     const fileFilter = document.getElementById('fileFilter');
+     const dateFilter = document.getElementById('dateFilter');
     const linkFilter = document.getElementById('linkFilter');
 
     let chatData = [];
      let senderCounts = {};
      let fileCounts = {};
+     let dateCounts = {};
     let fuse;
 
     chatFile.addEventListener('change', async (event) => {
@@ -31,10 +33,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
               const fileContents = await readFile(file);
-            const {chatData:parsedData, senderCounts: parsedSenders, fileCounts: parsedFiles} = parseChat(fileContents);
+             const {chatData:parsedData, senderCounts: parsedSenders, fileCounts: parsedFiles, dateCounts: parsedDates} = parseChat(fileContents);
             chatData = parsedData;
             senderCounts = parsedSenders
-             fileCounts = parsedFiles
+             fileCounts = parsedFiles;
+             dateCounts = parsedDates
 
           await saveChatData(await openDatabase(), chatData);
              setupFilters();
@@ -56,11 +59,13 @@ document.addEventListener('DOMContentLoaded', () => {
           const query = searchBox.value;
           const selectedSenders = Array.from(senderFilter.selectedOptions).map(option => option.value);
            const selectedFiles = Array.from(fileFilter.selectedOptions).map(option => option.value);
+          const selectedDates = Array.from(dateFilter.selectedOptions).map(option => option.value);
            const selectedLink = linkFilter.value;
            const filters = {
                 senders: selectedSenders,
                 fileExtensions: selectedFiles,
-                link: selectedLink
+              link: selectedLink,
+             dates: selectedDates
             }
               const results = performSearch(fuse, query, filters);
               displayResults(results);
@@ -74,11 +79,13 @@ document.addEventListener('DOMContentLoaded', () => {
        if (fuse){
              const selectedSenders = Array.from(senderFilter.selectedOptions).map(option => option.value);
              const selectedFiles = Array.from(fileFilter.selectedOptions).map(option => option.value);
-             const selectedLink = linkFilter.value;
+             const selectedDates = Array.from(dateFilter.selectedOptions).map(option => option.value);
+           const selectedLink = linkFilter.value;
                const filters = {
                 senders: selectedSenders,
                 fileExtensions: selectedFiles,
-                  link: selectedLink
+                   link: selectedLink,
+                    dates: selectedDates
             }
 
               const results = performSearch(fuse, query, filters);
@@ -91,14 +98,38 @@ document.addEventListener('DOMContentLoaded', () => {
            if (fuse){
                const selectedSenders = Array.from(senderFilter.selectedOptions).map(option => option.value);
               const selectedFiles = Array.from(fileFilter.selectedOptions).map(option => option.value);
-               const selectedLink = linkFilter.value;
+            const selectedDates = Array.from(dateFilter.selectedOptions).map(option => option.value);
+             const selectedLink = linkFilter.value;
                 const filters = {
                 senders: selectedSenders,
                 fileExtensions: selectedFiles,
-                    link: selectedLink
+                   link: selectedLink,
+                     dates: selectedDates
             }
                 const results = performSearch(fuse, query, filters);
               displayResults(results);
+        }
+
+    });
+          dateFilter.addEventListener('change', () => {
+             const query = searchBox.value;
+
+          if (fuse){
+               const selectedSenders = Array.from(senderFilter.selectedOptions).map(option => option.value);
+              const selectedFiles = Array.from(fileFilter.selectedOptions).map(option => option.value);
+               const selectedDates = Array.from(dateFilter.selectedOptions).map(option => option.value);
+             const selectedLink = linkFilter.value;
+
+                  const filters = {
+                  senders: selectedSenders,
+                   fileExtensions: selectedFiles,
+                      link: selectedLink,
+                      dates: selectedDates
+              }
+
+
+                 const results = performSearch(fuse, query, filters);
+               displayResults(results);
         }
 
     });
@@ -108,12 +139,14 @@ document.addEventListener('DOMContentLoaded', () => {
           if (fuse){
                 const selectedSenders = Array.from(senderFilter.selectedOptions).map(option => option.value);
                const selectedFiles = Array.from(fileFilter.selectedOptions).map(option => option.value);
-              const selectedLink = linkFilter.value;
+               const selectedDates = Array.from(dateFilter.selectedOptions).map(option => option.value);
+             const selectedLink = linkFilter.value;
 
                   const filters = {
                   senders: selectedSenders,
                    fileExtensions: selectedFiles,
-                      link: selectedLink
+                      link: selectedLink,
+                      dates: selectedDates
               }
 
 
@@ -165,6 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const chatData = [];
       const senderCounts = {};
        const fileCounts = {};
+        const dateCounts = {};
       const regex = /^\[(.*?)\]\s([^\:]+)\:\s(.*)$/;
 
       lines.forEach((line) => {
@@ -176,9 +210,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
           const fileExtensions = extractFileExtensions(message);
             const hasLink = messageContainsLink(message);
+           const date = new Date(timestamp);
+           const year = date.getFullYear();
+           const month = date.toLocaleString('default', { month: 'long' });
+            const dateString = `${month} ${year}`;
 
 
-          chatData.push({ timestamp, sender, message, fileExtensions, hasLink });
+          chatData.push({ timestamp, sender, message, fileExtensions, hasLink, dateString });
 
 
             senderCounts[sender] = (senderCounts[sender] || 0) + 1;
@@ -186,17 +224,17 @@ document.addEventListener('DOMContentLoaded', () => {
           fileExtensions.forEach(extension => {
             fileCounts[extension] = (fileCounts[extension] || 0 )+1;
           })
+            dateCounts[dateString] = (dateCounts[dateString] || 0 )+1;
         }
       });
 
 
-      return {chatData, senderCounts, fileCounts };
+      return {chatData, senderCounts, fileCounts, dateCounts };
 
     }
 
      function messageContainsLink(message) {
-       const linkRegex = /(https?:\/\/[^\s]+)/i; // Basic regex for URLs
-
+       const linkRegex = /(https?:\/\/[^\s]+)/i;
        return linkRegex.test(message);
     }
 
@@ -205,7 +243,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const regex = /\.(jpg|jpeg|png|gif|pdf|mp4|mov|avi|doc|docx|xls|xlsx|txt)/gi;
       const matches = message.match(regex) || [];
       return matches.map(match => match.slice(1));
-
     }
 
 
@@ -231,9 +268,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (filters.senders && filters.senders.length > 0 && !filters.senders.includes(item.sender)) {
           return false
         }
-        if (filters.fileExtensions && filters.fileExtensions.length > 0 && !item.fileExtensions.some(extension => filters.fileExtensions.includes(extension))) {
-          return false
+           if (filters.dates && filters.dates.length > 0 && !filters.dates.includes(item.dateString)) {
+            return false;
+          }
+
+        if (filters.fileExtensions && filters.fileExtensions.length > 0) {
+            if (filters.fileExtensions.includes("notFile") && item.fileExtensions.length > 0){
+              return false
+            } else if (!filters.fileExtensions.includes("notFile") && !item.fileExtensions.some(extension => filters.fileExtensions.includes(extension)) && item.fileExtensions.length > 0) {
+               return false
+            } else if (!filters.fileExtensions.includes("notFile") && item.fileExtensions.length === 0){
+                 return false
+            }
+
         }
+
+
+
+
           if (filters.link === "hasLink" && !item.hasLink) {
            return false
         }
@@ -282,12 +334,28 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
        fileFilter.innerHTML = '';
+       const notFileOption = document.createElement('option');
+            notFileOption.value = "notFile";
+              notFileOption.text =  `Not File Related`
+             fileFilter.appendChild(notFileOption);
+
       Object.keys(fileCounts).forEach(file => {
           const option = document.createElement('option');
             option.value = file;
             option.text = `${file} (${fileCounts[file]})`;
               fileFilter.appendChild(option);
         })
+          dateFilter.innerHTML = '';
+
+          Object.keys(dateCounts).forEach(date => {
+              const option = document.createElement("option");
+              option.value = date;
+                option.text = `${date} (${dateCounts[date]})`;
+                dateFilter.appendChild(option);
+
+          });
+
+
     }
 
       function openDatabase() {
