@@ -17,8 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const beforeDateInput = document.getElementById('beforeDate');
     const afterDateInput = document.getElementById('afterDate');
     const resetFiltersBtn = document.getElementById('resetFiltersBtn');
-    const domainFilterDiv = document.querySelector('.domain-filter');
-     const chatHistoryContent = document.getElementById('chatHistoryContent');
+    const chatHistoryContent = document.getElementById('chatHistoryContent');
     const scrollToTopBtn = document.getElementById('scrollToTopBtn');
     const donateBtn = document.getElementById('donateBtn');
 
@@ -128,23 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
 
-     function createDomainFilters(domains) {
-            domainFilterDiv.innerHTML = '';
-
-             domains.forEach(([domain, count]) => {
-                const label = document.createElement('label');
-                 const input = document.createElement('input');
-                input.type = 'checkbox';
-                input.value = domain;
-                 input.id = `domain-${domain}`; // Unique ID for label association
-                  label.appendChild(input);
-                  const textSpan = document.createElement('span');
-                 textSpan.textContent = `${domain} (${count})`;
-                  label.appendChild(textSpan);
-                domainFilterDiv.appendChild(label);
-            });
-        }
-
 
       function parseChat(text) {
          const messageRegex = /^\[(.*?)\]\s(.*?):\s(.*?)$/gm;
@@ -179,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
                  displayFilterOptions(fileFilter, chatInfo.files);
                   displayFilterOptions(linkFilter, chatInfo.links);
                    displayFilterOptions(dateFilter, chatInfo.dates);
-                    createDomainFilters(chatInfo.links)
+
 
                  filteredChatData = [...chatData];
                  displayResults(filteredChatData);
@@ -244,32 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
                          }
                 } )
             );
-             }else if(linkFilterType.value === 'selected' && domainFilterDiv.querySelectorAll('input[type="checkbox"]:checked').length > 0){
-                    const selectedDomains = Array.from(domainFilterDiv.querySelectorAll('input[type="checkbox"]:checked')).map(checkbox => checkbox.value);
-
-                    filteredResults = filteredResults.filter(message =>
-                        selectedDomains.some(domain => {
-                            try {
-                                const urlRegex = /(https?:\/\/[^\s]+)/g;
-                                let match;
-                                while((match = urlRegex.exec(message.text)) !== null){
-                                    const url = new URL(match[0]);
-                                    if(url.hostname.includes(domain)){
-                                          return true;
-                                    }
-                                }
-                                return false;
-
-
-                            } catch(error) {
-                                return false;
-
-                            }
-                        })
-                    );
-
             }
-
 
             // Date Filter
               if(dateFilterType.value === 'selected' && dateFilter.selectedOptions.length > 0 ){
@@ -342,13 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         applyFilters();
     });
-     domainFilterDiv.addEventListener('change', () =>{
-            if(linkFilterType.value === 'any'){
-               linkFilterType.value = 'selected';
-            }
 
-          applyFilters();
-     })
       dateFilterType.addEventListener('change', () => {
           if (dateFilterType.value === 'any') {
                 dateFilter.value = '';
@@ -378,7 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dateFilter.value = '';
          beforeDateInput.value = '';
         afterDateInput.value = '';
-        domainFilterDiv.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
+
        filteredChatData = [...chatData];
         currentPage = 1;
         displayResults(filteredChatData);
@@ -447,28 +398,6 @@ document.addEventListener('DOMContentLoaded', () => {
                          }
                 } )
             );
-             } else if(linkFilterType.value === 'selected' && domainFilterDiv.querySelectorAll('input[type="checkbox"]:checked').length > 0){
-                const selectedDomains = Array.from(domainFilterDiv.querySelectorAll('input[type="checkbox"]:checked')).map(checkbox => checkbox.value);
-                    filteredResults = filteredResults.filter(message =>
-                        selectedDomains.some(domain => {
-                            try {
-                                const urlRegex = /(https?:\/\/[^\s]+)/g;
-                                let match;
-                                while((match = urlRegex.exec(message.text)) !== null){
-                                    const url = new URL(match[0]);
-                                    if(url.hostname.includes(domain)){
-                                        return true;
-                                    }
-                                }
-                                return false;
-
-
-                            } catch(error) {
-                                return false;
-                            }
-                        })
-                    );
-
             }
 
             // Date Filter
