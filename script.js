@@ -12,24 +12,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileFilterType = document.getElementById('fileFilterType');
     const linkFilter = document.getElementById('linkFilter');
     const linkFilterType = document.getElementById('linkFilterType');
-    const dateFilter = document.getElementById('dateFilter');
+     const dateFilter = document.getElementById('dateFilter');
     const dateFilterType = document.getElementById('dateFilterType');
     const beforeDateInput = document.getElementById('beforeDate');
     const afterDateInput = document.getElementById('afterDate');
     const resetFiltersBtn = document.getElementById('resetFiltersBtn');
-    const domainFilterDiv = document.querySelector('.domain-filter');
     const chatHistoryContent = document.getElementById('chatHistoryContent');
     const scrollToTopBtn = document.getElementById('scrollToTopBtn');
     const donateBtn = document.getElementById('donateBtn');
-    const contentDiv = document.querySelector('.content');
+
 
     let chatData = [];
     let filteredChatData = [];
     let currentSearchTerm = '';
-     let itemsPerPage = 10;
-    let currentPage = 1;
-    let fuse;
-    let visibleResults = 0;
+     const itemsPerPage = 20;
+     let currentPage = 1;
+     let fuse;
+
 
         // Function to extract date string in MMM YYYY format
     function formatDate(dateString) {
@@ -128,23 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
 
-     function createDomainFilters(domains) {
-            domainFilterDiv.innerHTML = '';
-
-             domains.forEach(([domain, count]) => {
-                const label = document.createElement('label');
-                 const input = document.createElement('input');
-                input.type = 'checkbox';
-                input.value = domain;
-                 input.id = `domain-${domain}`; // Unique ID for label association
-                  label.appendChild(input);
-                  const textSpan = document.createElement('span');
-                 textSpan.textContent = `${domain} (${count})`;
-                  label.appendChild(textSpan);
-                domainFilterDiv.appendChild(label);
-            });
-        }
-
 
       function parseChat(text) {
          const messageRegex = /^\[(.*?)\]\s(.*?):\s(.*?)$/gm;
@@ -171,8 +153,6 @@ document.addEventListener('DOMContentLoaded', () => {
            try {
                 const text = await file.text();
                  chatData = parseChat(text);
-                   // Sort messages by date descending
-                chatData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
 
                 const chatInfo = extractChatInfo(chatData);
@@ -181,11 +161,11 @@ document.addEventListener('DOMContentLoaded', () => {
                  displayFilterOptions(fileFilter, chatInfo.files);
                   displayFilterOptions(linkFilter, chatInfo.links);
                    displayFilterOptions(dateFilter, chatInfo.dates);
-                    createDomainFilters(chatInfo.links)
+
 
                  filteredChatData = [...chatData];
-                 displayInitialResults(filteredChatData);
-                 displayFullChatHistory();
+                 displayResults(filteredChatData);
+                displayFullChatHistory();
                 loadingDiv.textContent = 'File Loaded';
              } catch (error) {
                 loadingDiv.textContent = 'Error loading file.';
@@ -246,32 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
                          }
                 } )
             );
-             }else if(linkFilterType.value === 'selected' && domainFilterDiv.querySelectorAll('input[type="checkbox"]:checked').length > 0){
-                    const selectedDomains = Array.from(domainFilterDiv.querySelectorAll('input[type="checkbox"]:checked')).map(checkbox => checkbox.value);
-
-                    filteredResults = filteredResults.filter(message =>
-                        selectedDomains.some(domain => {
-                            try {
-                                const urlRegex = /(https?:\/\/[^\s]+)/g;
-                                let match;
-                                while((match = urlRegex.exec(message.text)) !== null){
-                                    const url = new URL(match[0]);
-                                    if(url.hostname.includes(domain)){
-                                          return true;
-                                    }
-                                }
-                                return false;
-
-
-                            } catch(error) {
-                                return false;
-
-                            }
-                        })
-                    );
-
             }
-
 
             // Date Filter
               if(dateFilterType.value === 'selected' && dateFilter.selectedOptions.length > 0 ){
@@ -295,8 +250,8 @@ document.addEventListener('DOMContentLoaded', () => {
                   filteredResults = filteredResults.filter(message => new Date(message.timestamp) >= afterDate);
               }
              filteredChatData =  filteredResults;
-              currentPage = 1;
-              displayInitialResults(filteredChatData);
+             currentPage = 1;
+             displayResults(filteredChatData);
         }
 
     // Event listeners for filter dropdowns
@@ -344,13 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         applyFilters();
     });
-     domainFilterDiv.addEventListener('change', () =>{
-            if(linkFilterType.value === 'any'){
-               linkFilterType.value = 'selected';
-            }
 
-          applyFilters();
-     })
       dateFilterType.addEventListener('change', () => {
           if (dateFilterType.value === 'any') {
                 dateFilter.value = '';
@@ -378,13 +327,13 @@ document.addEventListener('DOMContentLoaded', () => {
         linkFilter.value = '';
         dateFilterType.value = 'any';
         dateFilter.value = '';
-        beforeDateInput.value = '';
+         beforeDateInput.value = '';
         afterDateInput.value = '';
-        domainFilterDiv.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
+
        filteredChatData = [...chatData];
-       currentPage = 1;
-        displayInitialResults(filteredChatData);
-        displayFullChatHistory();
+        currentPage = 1;
+        displayResults(filteredChatData);
+           displayFullChatHistory();
     });
 
 
@@ -404,7 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const filteredSearchResults = applyFiltersToSearchResults(matchedMessages);
 
-            displayInitialResults(filteredSearchResults);
+           displayResults(filteredSearchResults);
          } else {
            applyFilters();
 
@@ -449,28 +398,6 @@ document.addEventListener('DOMContentLoaded', () => {
                          }
                 } )
             );
-             } else if(linkFilterType.value === 'selected' && domainFilterDiv.querySelectorAll('input[type="checkbox"]:checked').length > 0){
-                const selectedDomains = Array.from(domainFilterDiv.querySelectorAll('input[type="checkbox"]:checked')).map(checkbox => checkbox.value);
-                    filteredResults = filteredResults.filter(message =>
-                        selectedDomains.some(domain => {
-                            try {
-                                const urlRegex = /(https?:\/\/[^\s]+)/g;
-                                let match;
-                                while((match = urlRegex.exec(message.text)) !== null){
-                                    const url = new URL(match[0]);
-                                    if(url.hostname.includes(domain)){
-                                        return true;
-                                    }
-                                }
-                                return false;
-
-
-                            } catch(error) {
-                                return false;
-                            }
-                        })
-                    );
-
             }
 
             // Date Filter
@@ -504,13 +431,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-      function displayInitialResults(messages){
-              searchResultsDiv.innerHTML = '';
-            searchResultsDiv.classList.remove('hidden');
+    // Function to display search results
+    function displayResults(messages) {
+        searchResultsDiv.innerHTML = '';
+        searchResultsDiv.classList.remove('hidden');
 
-            visibleResults = 0;
+           const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+             const paginatedMessages = messages.slice(startIndex, endIndex);
 
-            if(messages.length === 0){
+
+            if(paginatedMessages.length === 0){
                    const noResult = document.createElement('div');
                   noResult.textContent = 'No results found.';
                   searchResultsDiv.appendChild(noResult);
@@ -518,18 +449,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                return;
              }
-
-             displayMoreResults(messages);
-      }
-
-    // Function to display search results
-    function displayMoreResults(messages) {
-
-
-           const startIndex = visibleResults;
-            const endIndex = startIndex + itemsPerPage;
-             const paginatedMessages = messages.slice(startIndex, endIndex);
-
             const conversations = groupMessagesByConversation(paginatedMessages);
 
 
@@ -546,22 +465,23 @@ document.addEventListener('DOMContentLoaded', () => {
                  searchResultsDiv.appendChild(resultItem);
 
             });
-              visibleResults += paginatedMessages.length;
-            if (messages.length > visibleResults) {
+
+            if (messages.length > endIndex) {
                  loadMoreBtn.classList.remove('hidden');
              } else {
                 loadMoreBtn.classList.add('hidden');
             }
-     }
+
+
+        }
 
           loadMoreBtn.addEventListener('click', () => {
-           displayMoreResults(filteredChatData);
+           currentPage++;
+            displayResults(filteredChatData);
        });
        // Function to expand a conversation
     function expandConversation(conversation, selectedTimestamp) {
 
-         // Remove highlight from any previously highlighted message
-            chatHistoryContent.querySelectorAll('.conversation-message.highlighted').forEach(el => el.classList.remove('highlighted'));
 
            // Scroll to the selected message
          const selectedMessageElement = document.getElementById(`message-${selectedTimestamp.replace(/[\s:,]/g, '-')}`);
@@ -570,7 +490,6 @@ document.addEventListener('DOMContentLoaded', () => {
              behavior: 'smooth',
             block: 'start'
            });
-                  selectedMessageElement.classList.add('highlighted');
          }
 
     }
@@ -600,22 +519,11 @@ document.addEventListener('DOMContentLoaded', () => {
      });
     // Scroll to top logic
     scrollToTopBtn.addEventListener('click', () => {
-        searchResultsDiv.scrollTo({ top: 0, behavior: 'smooth' });
+       window.scrollTo({ top: 0, behavior: 'smooth' });
      });
 
     // Donate button logic
     donateBtn.addEventListener('click', () => {
        window.open('https://example.com/donate', '_blank');
     });
-
-    // Set initial visible results based on available height
-      function setInitialItemsPerPage() {
-            const searchResultsHeight = searchResultsDiv.clientHeight;
-            const resultItemHeight = 37 //estimated using the inspect tool
-             itemsPerPage = Math.floor(searchResultsHeight/ resultItemHeight);
-            console.log(itemsPerPage);
-      }
-
-        window.addEventListener('resize', setInitialItemsPerPage);
-        setInitialItemsPerPage();
 });
