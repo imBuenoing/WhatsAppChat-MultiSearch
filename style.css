@@ -4,12 +4,12 @@ body {
     padding: 0;
     background-color: #f4f4f4;
     position: relative;
-    display: flex;
+      display: flex;
     flex-direction: column;
-}
 
+}
 .app-container {
-    display: flex;
+  display: flex;
     flex: 1;
     height: auto; /* Allow content to determine height */
 }
@@ -21,7 +21,9 @@ body {
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   position: relative;
   z-index: 100;
-
+    position: sticky; /* Make search bar sticky */
+    top: 0;
+    background-color: #f4f4f4;
 }
 .search-container input{
    padding: 8px;
@@ -36,17 +38,15 @@ body {
     padding: 20px;
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
     border-right: 1px solid #e0e0e0;
-    overflow-y: auto;
+     overflow-y: auto;
     flex: 0 0 280px;
-    height: 100vh; /* Set height to 100% of viewport height */
 }
 .chat-history{
     flex: 0 0 350px;
      background-color: #f9f9f9;
      padding: 20px;
     border-left: 1px solid #e0e0e0;
-     overflow-y: auto;
-    height: 100vh;
+    overflow-y: auto;
 }
 .chat-history .conversation-message{
        margin-bottom: 10px;
@@ -59,9 +59,7 @@ body {
     flex: 1;
     padding: 20px;
     overflow-y: auto;
-        height: 100vh;
-
-
+    position: relative;
 }
 
 .hidden {
@@ -84,6 +82,9 @@ input[type="file"] {
     border-bottom: 1px solid #eee;
     padding: 10px 0;
        cursor: pointer;
+}
+.result-item.highlighted {
+    background-color: #e0f7fa; /* Light highlight color */
 }
 
 .tooltip-trigger{
@@ -172,11 +173,12 @@ select[multiple] {
            border-radius: 4px;
       }
   .floating-buttons {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    display: flex;
+     position: absolute;
+    bottom: 10px;
+    left: 10px;
+     display: flex;
     gap: 10px;
+
 }
 
 .floating-buttons button {
@@ -190,7 +192,17 @@ select[multiple] {
 .floating-buttons button:hover {
     background-color: #2980b9;
 }
+.domain-filter{
+    margin-left: 20px;
+}
+.domain-filter label{
+   display: block;
+    margin: 5px 0;
+}
 
+.domain-filter input {
+    margin-right: 5px;
+}
 
 select[multiple] {
        width: 100%;
