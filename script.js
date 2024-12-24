@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const beforeDateInput = document.getElementById('beforeDate');
     const afterDateInput = document.getElementById('afterDate');
     const resetFiltersBtn = document.getElementById('resetFiltersBtn');
-    const domainFilterDiv = document.querySelector('.domain-filter');
     const chatHistoryContent = document.getElementById('chatHistoryContent');
     const scrollToTopBtn = document.getElementById('scrollToTopBtn');
     const donateBtn = document.getElementById('donateBtn');
@@ -29,9 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
      const itemsPerPage = 20;
      let currentPage = 1;
      let fuse;
-    let isProcessing = false; // Flag to prevent concurrent processing
-     let fileReader;
-
 
 
         // Function to extract date string in MMM YYYY format
@@ -131,23 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
 
-     function createDomainFilters(domains) {
-            domainFilterDiv.innerHTML = '';
-
-             domains.forEach(([domain, count]) => {
-                const label = document.createElement('label');
-                 const input = document.createElement('input');
-                input.type = 'checkbox';
-                input.value = domain;
-                 input.id = `domain-${domain}`; // Unique ID for label association
-                  label.appendChild(input);
-                  const textSpan = document.createElement('span');
-                 textSpan.textContent = `${domain} (${count})`;
-                  label.appendChild(textSpan);
-                domainFilterDiv.appendChild(label);
-            });
-        }
-
 
       function parseChat(text) {
          const messageRegex = /^\[(.*?)\]\s(.*?):\s(.*?)$/gm;
@@ -163,74 +142,36 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         return messages;
         }
-     // Function to process file in chunks
-       function processFile(file) {
-        if (isProcessing) {
-            console.log('already processing');
-            return;
-           }
-        isProcessing = true;
-         loadingDiv.textContent = 'Loading...';
-        chatData = []; // Reset chat data
-
-        fileReader = new FileReader();
-           let lastIndex = 0;
-           const chunkSize = 500000; // 500KB chunk size
-
-            fileReader.onload = function (event) {
-                const chunk = event.target.result;
-                   const messages = parseChat(chunk);
-                    chatData.push(...messages);
-                lastIndex += chunk.length;
-                if (lastIndex < file.size) {
-                     readChunk(lastIndex);
-                } else {
-
-                     const chatInfo = extractChatInfo(chatData);
-                       displayFilterOptions(senderFilter, chatInfo.senders);
-                     displayFilterOptions(fileFilter, chatInfo.files);
-                     displayFilterOptions(linkFilter, chatInfo.links);
-                     displayFilterOptions(dateFilter, chatInfo.dates);
-                    createDomainFilters(chatInfo.links)
-
-                        filteredChatData = [...chatData];
-                       displayResults(filteredChatData);
-                        displayFullChatHistory();
-
-                    loadingDiv.textContent = 'File Loaded';
-                    isProcessing = false;
-                       fileReader = null;
-
-
-                 }
-            };
-
-            fileReader.onerror = function (event) {
-             loadingDiv.textContent = 'Error loading file.';
-                console.error('Error reading file:', event);
-                isProcessing = false;
-                   fileReader = null;
-            };
-
-             function readChunk(index) {
-                    const blob = file.slice(index, index + chunkSize);
-                      fileReader.readAsText(blob);
-             }
-
-              readChunk(lastIndex);
-
-    }
-
-
     // Function to handle file upload
     chatFile.addEventListener('change', async (e) => {
-          const file = e.target.files[0];
+         loadingDiv.textContent = 'Loading...';
+        const file = e.target.files[0];
           if (!file) {
              loadingDiv.textContent = 'No file selected.';
                 return;
           }
+           try {
+                const text = await file.text();
+                 chatData = parseChat(text);
 
-         processFile(file);
+
+                const chatInfo = extractChatInfo(chatData);
+
+                displayFilterOptions(senderFilter, chatInfo.senders);
+                 displayFilterOptions(fileFilter, chatInfo.files);
+                  displayFilterOptions(linkFilter, chatInfo.links);
+                   displayFilterOptions(dateFilter, chatInfo.dates);
+
+
+                 filteredChatData = [...chatData];
+                 displayResults(filteredChatData);
+                displayFullChatHistory();
+                loadingDiv.textContent = 'File Loaded';
+             } catch (error) {
+                loadingDiv.textContent = 'Error loading file.';
+                 console.error('Error loading file:', error);
+            }
+
 
     });
 
@@ -285,32 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
                          }
                 } )
             );
-             }else if(linkFilterType.value === 'selected' && domainFilterDiv.querySelectorAll('input[type="checkbox"]:checked').length > 0){
-                    const selectedDomains = Array.from(domainFilterDiv.querySelectorAll('input[type="checkbox"]:checked')).map(checkbox => checkbox.value);
-
-                    filteredResults = filteredResults.filter(message =>
-                        selectedDomains.some(domain => {
-                            try {
-                                const urlRegex = /(https?:\/\/[^\s]+)/g;
-                                let match;
-                                while((match = urlRegex.exec(message.text)) !== null){
-                                    const url = new URL(match[0]);
-                                    if(url.hostname.includes(domain)){
-                                          return true;
-                                    }
-                                }
-                                return false;
-
-
-                            } catch(error) {
-                                return false;
-
-                            }
-                        })
-                    );
-
             }
-
 
             // Date Filter
               if(dateFilterType.value === 'selected' && dateFilter.selectedOptions.length > 0 ){
@@ -383,13 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         applyFilters();
     });
-     domainFilterDiv.addEventListener('change', () =>{
-            if(linkFilterType.value === 'any'){
-               linkFilterType.value = 'selected';
-            }
 
-          applyFilters();
-     })
       dateFilterType.addEventListener('change', () => {
           if (dateFilterType.value === 'any') {
                 dateFilter.value = '';
@@ -419,7 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dateFilter.value = '';
          beforeDateInput.value = '';
         afterDateInput.value = '';
-        domainFilterDiv.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
+
        filteredChatData = [...chatData];
         currentPage = 1;
         displayResults(filteredChatData);
@@ -428,7 +338,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // Function to perform search
-       const debouncedSearch = debounce(performSearch, 300);
     function performSearch() {
 
         const searchTerm = searchBox.value.trim();
@@ -489,28 +398,6 @@ document.addEventListener('DOMContentLoaded', () => {
                          }
                 } )
             );
-             } else if(linkFilterType.value === 'selected' && domainFilterDiv.querySelectorAll('input[type="checkbox"]:checked').length > 0){
-                const selectedDomains = Array.from(domainFilterDiv.querySelectorAll('input[type="checkbox"]:checked')).map(checkbox => checkbox.value);
-                    filteredResults = filteredResults.filter(message =>
-                        selectedDomains.some(domain => {
-                            try {
-                                const urlRegex = /(https?:\/\/[^\s]+)/g;
-                                let match;
-                                while((match = urlRegex.exec(message.text)) !== null){
-                                    const url = new URL(match[0]);
-                                    if(url.hostname.includes(domain)){
-                                        return true;
-                                    }
-                                }
-                                return false;
-
-
-                            } catch(error) {
-                                return false;
-                            }
-                        })
-                    );
-
             }
 
             // Date Filter
@@ -540,46 +427,44 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event listener for search input
     searchBox.addEventListener('input', () => {
            currentPage = 1;
-           debouncedSearch();
+           performSearch();
     });
 
 
     // Function to display search results
     function displayResults(messages) {
-         searchResultsDiv.innerHTML = '';
+        searchResultsDiv.innerHTML = '';
         searchResultsDiv.classList.remove('hidden');
-
 
            const startIndex = (currentPage - 1) * itemsPerPage;
             const endIndex = startIndex + itemsPerPage;
              const paginatedMessages = messages.slice(startIndex, endIndex);
 
 
-           if (paginatedMessages.length === 0) {
-             const noResult = document.createElement('div');
-            noResult.textContent = 'No results found.';
-              searchResultsDiv.appendChild(noResult);
-            loadMoreBtn.classList.add('hidden');
+            if(paginatedMessages.length === 0){
+                   const noResult = document.createElement('div');
+                  noResult.textContent = 'No results found.';
+                  searchResultsDiv.appendChild(noResult);
+                loadMoreBtn.classList.add('hidden');
 
-                return;
-           }
+               return;
+             }
+            const conversations = groupMessagesByConversation(paginatedMessages);
 
-
-          const conversations = groupMessagesByConversation(paginatedMessages);
-          const fragment = document.createDocumentFragment(); // document fragment to batch dom changes
 
 
             conversations.forEach(conversation => {
-                 const firstMessage = conversation[0];
-                 const resultItem = document.createElement('div');
+
+             const firstMessage = conversation[0];
+                const resultItem = document.createElement('div');
                 resultItem.classList.add('result-item');
-                  resultItem.textContent = `[${firstMessage.timestamp}] ${firstMessage.sender}: ${firstMessage.text}`;
-                 resultItem.addEventListener('click', () => expandConversation(conversation, firstMessage.timestamp));
-               fragment.appendChild(resultItem);
+                const messageContent = conversation.map(message => `[${message.timestamp}] ${message.sender}: ${message.text}`).join('\n');
+                resultItem.textContent = `[${firstMessage.timestamp}] ${firstMessage.sender}: ${firstMessage.text}`;
+                resultItem.addEventListener('click', () => expandConversation(conversation, firstMessage.timestamp));
+
+                 searchResultsDiv.appendChild(resultItem);
+
             });
-
-             searchResultsDiv.appendChild(fragment);
-
 
             if (messages.length > endIndex) {
                  loadMoreBtn.classList.remove('hidden');
@@ -613,15 +498,13 @@ document.addEventListener('DOMContentLoaded', () => {
         function displayFullChatHistory(){
              chatHistoryContent.innerHTML = '';
            if(chatData.length === 0 ) return;
-            const fragment = document.createDocumentFragment(); // document fragment to batch dom changes
-              chatData.forEach(message => {
+            chatData.forEach(message => {
                   const messageDiv = document.createElement('div');
                  messageDiv.classList.add('conversation-message');
                  messageDiv.textContent = `[${message.timestamp}] ${message.sender}: ${message.text}`;
-                  messageDiv.id = `message-${message.timestamp.replace(/[\s:,]/g, '-')}`
-                    fragment.appendChild(messageDiv);
+                  messageDiv.id = `message-${message.timestamp.replace(/[\s:,]/g, '-')}` // remove space, colon and comma for a valid ID
+                chatHistoryContent.appendChild(messageDiv);
              });
-            chatHistoryContent.appendChild(fragment);
              chatHistoryContent.scrollTop = chatHistoryContent.scrollHeight;
         }
    // Tooltip logic
@@ -641,17 +524,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Donate button logic
     donateBtn.addEventListener('click', () => {
-       window.open('https://example.com/donate', '_blank');
+       window.open('https://buymeacoffee.com/juino', '_blank');
     });
-
-   // Debounce function
-    function debounce(func, delay) {
-    let timeout;
-    return function (...args) {
-        const context = this;
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(context, args), delay);
-        };
-    }
-
 });
