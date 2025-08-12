@@ -9,6 +9,16 @@ self.onmessage = (e) => {
         parseFile(payload.text);
     } else if (type === 'filter') {
         filterAndSearch(payload);
+    } else if (type === 'getFullChat') { // <-- ADD THIS NEW BLOCK
+        // The worker has the full list, so it just sends it back.
+        // This is efficient because 'allMessages' is already in memory here.
+        self.postMessage({
+            type: 'fullChatData',
+            payload: {
+                messages: allMessages,
+                highlightId: payload.highlightId
+            }
+        });
     }
 };
 
