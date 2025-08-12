@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Global State ---
     let worker;
     let completeChatHistory = []; // Will hold the full, original chat for context view
-    let currentFilteredResults = []; // Will hold the current list of filtered results
+    currentFilteredResults = []; // Will hold the current list of filtered results
     let renderedCount = 0;
     const RESULTS_PER_PAGE = 50;
 
