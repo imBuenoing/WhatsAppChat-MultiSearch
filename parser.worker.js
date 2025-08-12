@@ -12,7 +12,10 @@ self.onmessage = (e) => {
     if (type === 'parse') {
         parseAndIndex(payload.text);
     } else if (type === 'filter') {
-        filterAndSearch(payload.filterState);
+        // --- THIS IS THE FIX ---
+        // BEFORE: filterAndSearch(payload.filterState);
+        // AFTER: The payload itself IS the filterState object.
+        filterAndSearch(payload);
     }
 };
 
