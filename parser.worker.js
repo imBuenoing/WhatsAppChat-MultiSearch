@@ -89,9 +89,11 @@ function parseFile(text) {
 
     allMessages = messages;
 
+    // We now send the full 'allMessages' array in the initial payload.
     self.postMessage({
         type: 'initialData',
         payload: {
+            messages: allMessages, // ADD THIS LINE
             senderCounts,
             fileExtCounts,
             domainCounts,
