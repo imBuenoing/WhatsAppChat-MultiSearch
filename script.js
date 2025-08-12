@@ -92,65 +92,71 @@ document.addEventListener('DOMContentLoaded', () => {
         renderDateFilter(data.dateTree);
     }
 
-    function setupSearchableDropdown(name, counts) {
-        const button = document.getElementById(`${name}-ms-button`);
-        const dropdown = document.getElementById(`${name}-ms-dropdown`);
-        const searchInput = dropdown.querySelector('.dropdown-search');
-        const optionsContainer = dropdown.querySelector('.dropdown-options');
-        const modeSelect = document.getElementById(`${name}-mode-select`);
+    // AFTER (Corrected version):
+function setupSearchableDropdown(name, counts) {
+    const button = document.getElementById(`${name}-ms-button`);
+    const dropdown = document.getElementById(`${name}-ms-dropdown`);
+    const searchInput = dropdown.querySelector('.dropdown-search');
+    const optionsContainer = dropdown.querySelector('.dropdown-options');
+    const modeSelect = document.getElementById(`${name}-mode-select`);
 
-        const sortedItems = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-        
-        const renderOptions = (filter = '') => {
-            optionsContainer.innerHTML = '';
-            sortedItems
-                .filter(([item]) => item.toLowerCase().includes(filter.toLowerCase()))
-                .forEach(([item, count]) => {
-                    const isChecked = filterState[modeSelect.dataset.statekey].includes(item);
-                    optionsContainer.insertAdjacentHTML('beforeend', `
-                        <label>
-                            <input type="checkbox" value="${item}" ${isChecked ? 'checked' : ''}>
-                            ${item}
-                            <span class="item-count">${count}</span>
-                        </label>
-                    `);
-                });
-        };
+    // MOVE THIS LINE TO THE TOP, RIGHT AFTER modeSelect IS DEFINED
+    modeSelect.dataset.statekey = name === 'from' ? 'senders' : (name === 'files' ? 'fileExts' : 'domains');
+    button.dataset.defaultText = button.querySelector('span').textContent;
 
-        renderOptions();
-        searchInput.addEventListener('input', () => renderOptions(searchInput.value));
 
-        // Event delegation for checkbox changes
-        optionsContainer.addEventListener('change', e => {
-            if (e.target.type === 'checkbox') {
-                const selected = Array.from(optionsContainer.querySelectorAll('input:checked')).map(c => c.value);
-                filterState[modeSelect.dataset.statekey] = selected;
+    const sortedItems = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    
+    const renderOptions = (filter = '') => {
+        optionsContainer.innerHTML = '';
+        sortedItems
+            .filter(([item]) => item.toLowerCase().includes(filter.toLowerCase()))
+            .forEach(([item, count]) => {
+                // This line will now work correctly
+                const isChecked = filterState[modeSelect.dataset.statekey].includes(item);
+                optionsContainer.insertAdjacentHTML('beforeend', `
+                    <label>
+                        <input type="checkbox" value="${item}" ${isChecked ? 'checked' : ''}>
+                        ${item}
+                        <span class="item-count">${count}</span>
+                    </label>
+                `);
+            });
+    };
 
-                if (selected.length > 0) {
-                    modeSelect.value = 'selected';
-                    button.querySelector('span').textContent = `${selected.length} selected`;
-                } else {
-                    modeSelect.value = modeSelect.options[0].value; // default
-                    button.querySelector('span').textContent = button.dataset.defaultText;
-                }
-                filterState[`${name}Mode`] = modeSelect.value;
-                triggerFilterUpdate();
+    renderOptions();
+    searchInput.addEventListener('input', () => renderOptions(searchInput.value));
+
+    // Event delegation for checkbox changes
+    optionsContainer.addEventListener('change', e => {
+        if (e.target.type === 'checkbox') {
+            const selected = Array.from(optionsContainer.querySelectorAll('input:checked')).map(c => c.value);
+            filterState[modeSelect.dataset.statekey] = selected;
+
+            if (selected.length > 0) {
+                // For files dropdown, the selected value is 'selected', for others it might be different
+                // Let's hardcode 'selected' for simplicity as it matches the HTML
+                modeSelect.value = 'selected'; 
+                button.querySelector('span').textContent = `${selected.length} selected`;
+            } else {
+                modeSelect.value = modeSelect.options[0].value; // default
+                button.querySelector('span').textContent = button.dataset.defaultText;
             }
-        });
-        
-        modeSelect.addEventListener('change', () => {
-             filterState[`${name}Mode`] = modeSelect.value;
-             if (modeSelect.value !== 'selected') {
-                filterState[modeSelect.dataset.statekey] = [];
-                renderOptions();
-                updateMultiSelectButtonText(button, modeSelect.dataset.statekey);
-             }
-             triggerFilterUpdate();
-        });
-
-        button.dataset.defaultText = button.querySelector('span').textContent;
-        modeSelect.dataset.statekey = name === 'from' ? 'senders' : (name === 'files' ? 'fileExts' : 'domains');
-    }
+            filterState[`${name}Mode`] = modeSelect.value;
+            triggerFilterUpdate();
+        }
+    });
+    
+    modeSelect.addEventListener('change', () => {
+         filterState[`${name}Mode`] = modeSelect.value;
+         if (modeSelect.value !== 'selected') {
+            filterState[modeSelect.dataset.statekey] = [];
+            renderOptions(); // Re-render with cleared checkboxes
+            updateMultiSelectButtonText(button, modeSelect.dataset.statekey);
+         }
+         triggerFilterUpdate();
+    });
+}
 
     function renderDateFilter(dateTree) {
         const monthNames = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
