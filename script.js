@@ -21,6 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Global State ---
     let worker;
+    let completeChatHistory = []; // NEW: Will hold the full, original chat
+    let currentFilteredResults = [];
     let allMessages = []; // This will only be used for the full chat view
     let currentFilteredResults = [];
     let renderedCount = 0;
