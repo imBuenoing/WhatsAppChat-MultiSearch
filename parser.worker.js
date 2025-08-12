@@ -1,31 +1,25 @@
-// Overwrite parser.worker.js with this new version
-
-// Import Fuse.js library directly into the worker
-importScripts('https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.min.js');
+// This is the final, optimized worker. It has NO Fuse.js dependency.
 
 let allMessages = [];
-let fuse;
 
 // --- Main Message Handler ---
 self.onmessage = (e) => {
     const { type, payload } = e.data;
     if (type === 'parse') {
-        parseAndIndex(payload.text);
+        parseFile(payload.text);
     } else if (type === 'filter') {
-        // --- THIS IS THE FIX ---
-        // BEFORE: filterAndSearch(payload.filterState);
-        // AFTER: The payload itself IS the filterState object.
         filterAndSearch(payload);
     }
 };
 
-// --- Parsing and Indexing Function ---
-function parseAndIndex(text) {
+// --- Parsing Function ---
+function parseFile(text) {
     self.postMessage({ type: 'status', payload: 'Parsing chat file...' });
 
+    // This parsing logic is already fast, so it remains the same.
     const lines = text.split('\n');
     const messages = [];
-    const messageRegex = /^\[(\d{1,2}\/\d{1,2}\/\d{2,4}, \d{1,2}:\d{2}:\d{2}\s?[APM]{2})\]\s(?:~\s)?([^:]+):\s([\s\S]*)/;
+    const messageRegex = /^\[(\d{1,2}\/(\d{1,2}\/\d{2,4}, \d{1,2}:\d{2}:\d{2}\s?[APM]{2})\]\s(?:~\s)?([^:]+):\s([\s\S]*)/;
     let currentMessage = null;
     let messageId = 0;
 
@@ -50,25 +44,27 @@ function parseAndIndex(text) {
 
     self.postMessage({ type: 'status', payload: 'Analyzing content...' });
 
+    // Post-processing and data aggregation
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     const fileRegex = /<attached: (.*?)(?:>| as .*)/;
     const senderCounts = {}, fileExtCounts = {}, domainCounts = {};
-    const dateTree = {}; // New hierarchical structure
+    const dateTree = {};
 
     messages.forEach(msg => {
-        // Files
-        const fileMatch = msg.content.match(fileRegex);
+        const lowerCaseContent = msg.content.toLowerCase();
+        msg.lowerCaseContent = lowerCaseContent; // Store for faster searching
+
+        const fileMatch = lowerCaseContent.match(fileRegex);
         msg.files = [];
         if (fileMatch) {
             const fileName = fileMatch[1];
-            const extension = fileName.split('.').pop().toLowerCase();
-            if (extension !== fileName) {
+            const extension = fileName.split('.').pop();
+            if (extension && extension !== fileName) {
                 msg.files.push(extension);
                 fileExtCounts[extension] = (fileExtCounts[extension] || 0) + 1;
             }
         }
         
-        // Links
         msg.links = [];
         const linkMatches = msg.content.match(urlRegex);
         if (linkMatches) {
@@ -81,10 +77,8 @@ function parseAndIndex(text) {
             }).filter(Boolean);
         }
 
-        // Counts
         senderCounts[msg.sender] = (senderCounts[msg.sender] || 0) + 1;
 
-        // Build Date Tree
         const [year, month, day] = msg.date.split('-');
         if (!dateTree[year]) dateTree[year] = { count: 0, months: {} };
         if (!dateTree[year].months[month]) dateTree[year].months[month] = { count: 0, days: {} };
@@ -96,13 +90,8 @@ function parseAndIndex(text) {
     });
 
     allMessages = messages;
-    
-    // Initialize Fuse.js
-    self.postMessage({ type: 'status', payload: 'Creating search index...' });
-    const fuseOptions = { keys: ['content', 'sender'], includeScore: true, threshold: 0.4, useExtendedSearch: true };
-    fuse = new Fuse(allMessages, fuseOptions);
 
-    // Send all initial data to main thread
+    // NO MORE FUSE.JS. We are done almost instantly.
     self.postMessage({
         type: 'initialData',
         payload: {
@@ -115,19 +104,12 @@ function parseAndIndex(text) {
     });
 }
 
-// --- Filtering and Searching Function ---
+// --- High-Performance Filtering and Searching Function ---
 function filterAndSearch(filterState) {
-    let results = [];
+    // Start with all messages
+    let results = allMessages;
 
-    // 1. Start with search or all messages
-    if (filterState.searchTerm) {
-        const fuseQuery = buildFuseQuery(filterState.searchTerm);
-        results = fuse.search(fuseQuery).map(result => result.item);
-    } else {
-        results = [...allMessages];
-    }
-    
-    // 2. Apply filters
+    // Apply simple, fast filters first
     if (filterState.fromMode === 'selected' && filterState.senders.length > 0) {
         const senderSet = new Set(filterState.senders);
         results = results.filter(msg => senderSet.has(msg.sender));
@@ -145,11 +127,8 @@ function filterAndSearch(filterState) {
         results = results.filter(msg => msg.links.some(domain => domainSet.has(domain)));
     }
 
-    // Hierarchical Date Filter
     if (filterState.dates.length > 0) {
-        results = results.filter(msg => {
-            return filterState.dates.some(d => msg.date.startsWith(d));
-        });
+        results = results.filter(msg => filterState.dates.some(d => msg.date.startsWith(d)));
     }
 
     if (filterState.afterDate) {
@@ -161,13 +140,99 @@ function filterAndSearch(filterState) {
         results = results.filter(msg => msg.timestamp.getTime() <= beforeTimestamp);
     }
 
+    // Apply the text search last, on the already-reduced set of results
+    if (filterState.searchTerm.trim() !== '') {
+        const searchFn = buildSearchFunction(filterState.searchTerm);
+        results = results.filter(msg => searchFn(msg.lowerCaseContent));
+    }
+
     results.sort((a, b) => b.timestamp - a.timestamp);
 
-    // Send filtered results back
     self.postMessage({ type: 'filterResults', payload: results });
 }
 
-// --- Helper Functions (inside worker) ---
+// --- Lightweight Search Function Builder ---
+function buildSearchFunction(query) {
+    const lowerCaseQuery = query.toLowerCase();
+    
+    // Regular expression to safely escape strings for regex construction.
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    
+    // Extract "exact phrases"
+    const exactPhrases = [];
+    const withoutExacts = lowerCaseQuery.replace(/"([^"]+)"/g, (_, phrase) => {
+        exactPhrases.push(escapeRegex(phrase));
+        return '';
+    });
+
+    // Extract NOT terms
+    const notTerms = [];
+    const withoutNots = withoutExacts.replace(/not\s+(\w+)/g, (_, term) => {
+        notTerms.push(escapeRegex(term));
+        return '';
+    });
+
+    // Process AND/OR terms
+    const tokens = withoutNots.trim().split(/\s+/).filter(Boolean);
+    const andTerms = [];
+    const orTerms = [];
+
+    let nextIsOr = false;
+    for (const token of tokens) {
+        if (token === 'or') {
+            nextIsOr = true;
+            continue;
+        }
+        if (token === 'and') {
+            nextIsOr = false;
+            continue;
+        }
+        if (nextIsOr) {
+            orTerms.push(escapeRegex(token));
+            nextIsOr = false;
+        } else {
+            andTerms.push(escapeRegex(token));
+        }
+    }
+    
+    // This returned function will be called for each message
+    return (text) => {
+        // Check NOT conditions first (fastest to fail)
+        if (notTerms.length > 0) {
+            for (const term of notTerms) {
+                if (new RegExp(term, 'i').test(text)) return false;
+            }
+        }
+
+        // Check "exact phrase" conditions
+        for (const phrase of exactPhrases) {
+            if (!new RegExp(phrase, 'i').test(text)) return false;
+        }
+
+        // Check AND conditions
+        for (const term of andTerms) {
+            if (!new RegExp(term, 'i').test(text)) return false;
+        }
+
+        // Check OR conditions (if any exist, at least one must pass)
+        if (orTerms.length > 0) {
+            let orPassed = false;
+            for (const term of orTerms) {
+                if (new RegExp(term, 'i').test(text)) {
+                    orPassed = true;
+                    break;
+                }
+            }
+            if (!orPassed) return false;
+        }
+
+        // If we survived all checks, it's a match!
+        return true;
+    };
+}
+
+
+// --- Helper Functions ---
 function parseTimestamp(timestampStr) {
     const parts = timestampStr.match(/(\d+)\/(\d+)\/(\d+),\s(\d+):(\d+):(\d+)\s([APM]{2})/);
     if (!parts) return new Date();
@@ -177,27 +242,4 @@ function parseTimestamp(timestampStr) {
     if (ampm.toUpperCase() === 'PM' && hour < 12) hour += 12;
     else if (ampm.toUpperCase() === 'AM' && hour === 12) hour = 0;
     return new Date(year, month - 1, day, hour, parseInt(minute), parseInt(second));
-}
-
-function buildFuseQuery(query) {
-    const andTerms = [], orTerms = [], notTerms = [], exactTerms = [];
-    query = query.replace(/"([^"]+)"/g, (match, term) => {
-        exactTerms.push({ content: `'${term}` });
-        return '';
-    });
-    const tokens = query.split(/\s+/).filter(Boolean);
-    let nextOp = null;
-    for(let i = 0; i < tokens.length; i++) {
-        const token = tokens[i];
-        if (['AND', 'OR'].includes(token.toUpperCase())) { nextOp = token.toUpperCase(); continue; }
-        if (token.toUpperCase() === 'NOT') { const notTerm = tokens[++i]; if(notTerm) notTerms.push({ content: `!${notTerm}`}); continue; }
-        if (nextOp === 'OR') orTerms.push({ content: token }); else andTerms.push({ content: token });
-        nextOp = null;
-    }
-    const fuseQuery = { $and: [] };
-    if (andTerms.length) fuseQuery.$and.push(...andTerms);
-    if (exactTerms.length) fuseQuery.$and.push(...exactTerms);
-    if (notTerms.length) fuseQuery.$and.push(...notTerms);
-    if (orTerms.length) fuseQuery.$and.push({ $or: orTerms });
-    return fuseQuery.$and.length ? fuseQuery : { content: query };
 }
