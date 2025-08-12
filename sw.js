@@ -1,45 +1,78 @@
-const cacheName = 'chat-analyzer-v1';
-const staticAssets = [
-    './',
-    './index.html',
-    './style.css',
-    './script.js',
-    './manifest.json',
-      './icon.png'  // Add your own icon
+const CACHE_NAME = 'whatsapp-chat-multisearch-v1';
+const URLS_TO_CACHE = [
+    '/',
+    '/index.html',
+    '/style.css',
+    '/script.js',
+    '/manifest.json',
+    '/icons/icon-192x192.png',
+    '/icons/icon-512x512.png',
+    'https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
 ];
 
-self.addEventListener('install', async event => {
-  const cache = await caches.open(cacheName);
-  await cache.addAll(staticAssets);
+// Install event: cache all core assets
+self.addEventListener('install', event => {
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then(cache => {
+                console.log('Opened cache');
+                return cache.addAll(URLS_TO_CACHE);
+            })
+    );
 });
 
+// Activate event: clean up old caches
+self.addEventListener('activate', event => {
+    const cacheWhitelist = [CACHE_NAME];
+    event.waitUntil(
+        caches.keys().then(cacheNames => {
+            return Promise.all(
+                cacheNames.map(cacheName => {
+                    if (cacheWhitelist.indexOf(cacheName) === -1) {
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
+        })
+    );
+});
+
+// Fetch event: serve from cache first, then network
 self.addEventListener('fetch', event => {
-    const req = event.request;
-    const url = new URL(req.url);
+    event.respondWith(
+        caches.match(event.request)
+            .then(response => {
+                // Cache hit - return response
+                if (response) {
+                    return response;
+                }
 
-    if(url.origin === location.origin){
-          event.respondWith(cacheFirst(req));
-    } else {
-      event.respondWith(networkFirst(req));
-    }
+                // Not in cache - fetch from network
+                return fetch(event.request).then(
+                    response => {
+                        // Check if we received a valid response
+                        if (!response || response.status !== 200 || response.type !== 'basic' && response.type !== 'cors') {
+                            return response;
+                        }
 
+                        // IMPORTANT: Clone the response. A response is a stream
+                        // and because we want the browser to consume the response
+                        // as well as the cache consuming the response, we need
+                        // to clone it so we have two streams.
+                        const responseToCache = response.clone();
 
+                        caches.open(CACHE_NAME)
+                            .then(cache => {
+                                // Only cache GET requests
+                                if(event.request.method === 'GET') {
+                                    cache.put(event.request, responseToCache);
+                                }
+                            });
+
+                        return response;
+                    }
+                );
+            })
+    );
 });
-async function cacheFirst(req){
-    const cacheResponse = await caches.match(req);
-  return cacheResponse || fetch(req);
-}
-
-async function networkFirst(req){
-  const dynamicCache = await caches.open('dynamic-chat-analyzer');
-  try{
-        const networkResponse = await fetch(req);
-        dynamicCache.put(req, networkResponse.clone());
-         return networkResponse;
-
-  } catch (err) {
-     const cachedResponse = await dynamicCache.match(req);
-        return cachedResponse || caches.match("./offline.html"); // You can include an offline.html in your static assets for better user experience
-
-  }
-}
