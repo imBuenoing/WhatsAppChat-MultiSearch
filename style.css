@@ -120,7 +120,7 @@ body {
     100% { transform: rotate(360deg); }
 }
 
-/* --- Multi-Select Custom Dropdown --- */
+/* --- Multi-Select & Searchable Dropdown --- */
 .multi-select-container {
     position: relative;
     width: 100%;
@@ -152,32 +152,94 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 4px;
     z-index: 1000;
-    max-height: 200px;
-    overflow-y: auto;
+    max-height: 250px; /* Increased height */
+    overflow-y: hidden; /* Let inner container scroll */
     box-shadow: var(--shadow);
+    flex-direction: column;
 }
 
 .multi-select-dropdown.show {
-    display: block;
+    display: flex;
 }
 
-.multi-select-dropdown label {
+.dropdown-search {
+    width: calc(100% - 1rem);
+    margin: 0.5rem;
+    padding: 0.4rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.dropdown-options {
+    max-height: 180px;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.dropdown-options label {
     display: flex;
     align-items: center;
     padding: 0.5rem;
     cursor: pointer;
     font-weight: normal;
 }
-.multi-select-dropdown label:hover {
+.dropdown-options label:hover {
     background-color: var(--background-color);
 }
-.multi-select-dropdown input {
+.dropdown-options input {
     margin-right: 0.5rem;
 }
-.multi-select-dropdown .item-count {
+.dropdown-options .item-count {
     margin-left: auto;
     font-size: 0.8em;
     color: #888;
+}
+
+/* --- Hierarchical Date Filter --- */
+.hierarchical-filter {
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 0.5rem;
+    max-height: 250px;
+    overflow-y: auto;
+    background-color: #fff;
+}
+
+.hierarchical-filter ul {
+    list-style: none;
+    padding-left: 1rem;
+}
+
+.hierarchical-filter .tree-item {
+    padding: 0.2rem 0;
+}
+
+.hierarchical-filter .tree-label {
+    cursor: pointer;
+}
+
+.hierarchical-filter .tree-item.collapsed > ul {
+    display: none;
+}
+
+.hierarchical-filter .caret {
+    display: inline-block;
+    width: 1rem;
+}
+
+.hierarchical-filter .caret::before {
+    content: '\f0da'; /* FontAwesome right arrow */
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    transition: transform 0.2s;
+}
+
+.hierarchical-filter .tree-item:not(.collapsed) > .tree-label > .caret::before {
+    transform: rotate(90deg);
+}
+
+.hierarchical-filter input[type="checkbox"] {
+    margin-right: 0.5rem;
 }
 
 /* --- Main Content --- */
@@ -242,6 +304,25 @@ body {
 .result-item .content {
     white-space: pre-wrap;
     word-break: break-word;
+}
+
+.load-more-button {
+    display: block;
+    width: 100%;
+    max-width: 300px;
+    margin: 1.5rem auto;
+    padding: 0.75rem;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.load-more-button:hover {
+    background-color: #006a70;
 }
 
 /* --- Tooltip --- */
@@ -394,82 +475,4 @@ body {
     .app-container {
         flex-direction: column;
     }
-}
-
-/* Add this to style.css */
-.load-more-button {
-    display: block;
-    width: 100%;
-    max-width: 300px;
-    margin: 1.5rem auto;
-    padding: 0.75rem;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.2s;
-}
-
-.load-more-button:hover {
-    background-color: #006a70;
-}
-
-/* Search input inside dropdowns */
-.dropdown-search {
-    width: calc(100% - 1rem);
-    margin: 0.5rem;
-    padding: 0.4rem;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-}
-
-.multi-select-dropdown .dropdown-options {
-    max-height: 150px;
-    overflow-y: auto;
-}
-
-/* Hierarchical Date Filter */
-.hierarchical-filter {
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    padding: 0.5rem;
-    max-height: 250px;
-    overflow-y: auto;
-    background-color: #fff;
-}
-
-.hierarchical-filter ul {
-    list-style: none;
-    padding-left: 1rem;
-}
-
-.hierarchical-filter .tree-item {
-    cursor: pointer;
-    padding: 0.2rem 0;
-}
-
-.hierarchical-filter .tree-item.collapsed > ul {
-    display: none;
-}
-
-.hierarchical-filter .caret {
-    display: inline-block;
-    width: 1rem;
-}
-
-.hierarchical-filter .caret::before {
-    content: '\f0da'; /* FontAwesome right arrow */
-    font-family: 'Font Awesome 5 Free';
-    font-weight: 900;
-    transition: transform 0.2s;
-}
-
-.hierarchical-filter .tree-item:not(.collapsed) > .tree-label > .caret::before {
-    transform: rotate(90deg);
-}
-
-.hierarchical-filter input[type="checkbox"] {
-    margin-right: 0.5rem;
 }
