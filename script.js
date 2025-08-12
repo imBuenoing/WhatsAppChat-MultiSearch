@@ -40,28 +40,33 @@ document.addEventListener('DOMContentLoaded', () => {
         worker = new Worker('parser.worker.js');
 
         worker.onmessage = (e) => {
-            const { type, payload } = e.data;
-            switch (type) {
-                case 'status':
-                    resultsInfo.textContent = payload;
-                    loadingSpinner.style.display = 'block';
-                    break;
-                case 'initialData':
-                    loadingSpinner.style.display = 'none';
-                    allMessages = []; // Clear old data
-                    populateAllFilters(payload);
-                    triggerFilterUpdate();
-                    break;
-                case 'filterResults':
-                    // Store full message objects only if they are part of the result, for full chat view
-                    allMessages = payload;
-                    currentFilteredResults = payload.map(m => ({ id: m.id, sender: m.sender, timestamp: new Date(m.timestamp), content: m.content }));
-                    renderedCount = 0;
-                    resultsContainer.innerHTML = '';
-                    renderResultsPage();
-                    break;
-            }
-        };
+    const { type, payload } = e.data;
+    switch (type) {
+        case 'status':
+            resultsInfo.textContent = payload;
+            loadingSpinner.style.display = 'block';
+            break;
+        case 'initialData':
+            loadingSpinner.style.display = 'none';
+            // --- THIS IS THE CHANGE ---
+            // Store the complete, original chat history.
+            completeChatHistory = payload.messages; 
+            
+            populateAllFilters(payload);
+            triggerFilterUpdate(); // This will now correctly show all messages initially
+            break;
+        case 'filterResults':
+            // The payload is the array of filtered message objects.
+            // We store them in the dedicated 'current' array.
+            currentFilteredResults = payload; 
+
+            // Reset and render the paginated results view.
+            renderedCount = 0;
+            resultsContainer.innerHTML = '';
+            renderResultsPage();
+            break;
+    }
+};
     }
 
     // Debounced function to send filter state to worker
@@ -293,13 +298,15 @@ function setupSearchableDropdown(name, counts) {
             if(i.closest('.filter-group')) i.value = '';
             i.checked = false;
         });
+        completeChatHistory = [];
+
         document.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
         document.querySelectorAll('.multi-select-button span').forEach(s => s.textContent = s.parentElement.dataset.defaultText || 'Select...');
         dateFilterContainer.innerHTML = ''; // Clear date tree
         resultsContainer.innerHTML = '';
         resultsInfo.textContent = 'Upload a chat file to begin.';
         loadMoreBtn.style.display = 'none';
-
+        
         if (worker) triggerFilterUpdate();
     }
     resetFiltersBtn.addEventListener('click', resetAll);
@@ -309,37 +316,44 @@ function setupSearchableDropdown(name, counts) {
     const fullChatView = document.getElementById('full-chat-view');
     const fullChatContainer = document.getElementById('full-chat-container');
     resultsContainer.addEventListener('click', e => {
-        const resultItem = e.target.closest('.result-item');
-        if (resultItem) {
-            const msgId = parseInt(resultItem.dataset.messageId);
-            const message = allMessages.find(m => m.id === msgId);
-            if (message) {
-                // To show context, we need the full message list.
-                // This is a trade-off. For super large files, we could ask the worker for context.
-                // For now, let's assume `allMessages` from the last filter is sufficient.
-                renderFullChat(msgId);
-            }
-        }
-    });
+    const resultItem = e.target.closest('.result-item');
+    if (resultItem) {
+        const msgId = parseInt(resultItem.dataset.messageId);
+        // We no longer need to find the message here. Just pass the ID.
+        renderFullChat(msgId);
+    }
+});
 
     function renderFullChat(highlightId) {
-        fullChatContainer.innerHTML = '';
-        const contextMessages = allMessages.sort((a,b) => a.timestamp - b.timestamp);
-        contextMessages.forEach(msg => {
-            const item = document.createElement('div');
-            item.className = 'chat-message';
-            item.id = `full-chat-msg-${msg.id}`;
-            if (msg.id === highlightId) item.classList.add('highlight');
-            item.innerHTML = `
-                <div class="sender-name">${msg.sender}</div>
-                <div class="content">${msg.content.replace(/\n/g, '<br>')}</div>
-                <div class="timestamp">${new Date(msg.timestamp).toLocaleString()}</div>
-            `;
-            fullChatContainer.appendChild(item);
-        });
-        fullChatView.classList.add('show');
-        document.getElementById(`full-chat-msg-${highlightId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+    fullChatContainer.innerHTML = '';
+    
+    // --- THIS IS THE FIX ---
+    // Use the complete, original history and sort it ascending (oldest first).
+    const contextMessages = [...completeChatHistory].sort((a,b) => a.timestamp - b.timestamp);
+
+    contextMessages.forEach(msg => {
+        const item = document.createElement('div');
+        item.className = 'chat-message';
+        item.id = `full-chat-msg-${msg.id}`;
+        
+        // Highlight the message that was clicked
+        if (msg.id === highlightId) {
+            item.classList.add('highlight');
+        }
+
+        item.innerHTML = `
+            <div class="sender-name">${msg.sender}</div>
+            <div class="content">${msg.content.replace(/\n/g, '<br>')}</div>
+            <div class="timestamp">${new Date(msg.timestamp).toLocaleString()}</div>
+        `;
+        fullChatContainer.appendChild(item);
+    });
+
+    fullChatView.classList.add('show');
+    
+    // Scroll the highlighted message into view
+    document.getElementById(`full-chat-msg-${highlightId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
     document.getElementById('close-full-chat').addEventListener('click', () => fullChatView.classList.remove('show'));
 
 
