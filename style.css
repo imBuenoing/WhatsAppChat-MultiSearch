@@ -395,3 +395,23 @@ body {
         flex-direction: column;
     }
 }
+
+/* Add this to style.css */
+.load-more-button {
+    display: block;
+    width: 100%;
+    max-width: 300px;
+    margin: 1.5rem auto;
+    padding: 0.75rem;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.load-more-button:hover {
+    background-color: #006a70;
+}
