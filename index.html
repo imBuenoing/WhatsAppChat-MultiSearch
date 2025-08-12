@@ -3,93 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WhatsAppChat-MultiSearch</title>
+    <title>WhatsApp Chat MultiSearch</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" href="icon.png" type="image/x-icon">
-    <script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.js"></script>
+    <meta name="theme-color" content="#25D366">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+
     <div class="app-container">
+        <!-- Sidebar for Filters -->
         <aside class="sidebar">
-            <div class="sidebar-section">
-                <input type="file" id="chatFile" accept=".txt">
-                <div id="loading"></div>
+            <div class="sidebar-header">
+                <h2>WhatsAppChat-MultiSearch</h2>
             </div>
-           <div class="sidebar-section">
-               <div class="filter-header">
-                  <label for="senderFilter">From:</label>
-                  <select id="senderFilterType">
-                      <option value="any">Any</option>
-                      <option value="selected">Selected</option>
-                  </select>
-                 </div>
-                  <select id="senderFilter" multiple></select>
-            </div>
-            <div class="sidebar-section">
-                 <div class="filter-header">
-                     <label for="fileFilter">File:</label>
-                    <select id="fileFilterType">
-                         <option value="notFile">Not File Related</option>
-                          <option value="selected">Selected</option>
-                    </select>
+            
+            <div class="sidebar-content">
+                <!-- Chat Upload -->
+                <div class="filter-group">
+                    <label for="chatFile">Upload Chat (.txt)</label>
+                    <input type="file" id="chatFile" accept=".txt">
+                    <div id="loading-spinner" class="spinner" style="display: none;"></div>
                 </div>
-                <select id="fileFilter" multiple></select>
-           </div>
-           <div class="sidebar-section">
-               <div class="filter-header">
-                  <label for="linkFilter">Links:</label>
-                     <select id="linkFilterType">
-                       <option value="any">Any</option>
+
+                <!-- From Filter -->
+                <div class="filter-group">
+                    <label>From</label>
+                    <select id="from-mode-select">
+                        <option value="any">Any</option>
                         <option value="selected">Selected</option>
-                      </select>
+                    </select>
+                    <div class="multi-select-container">
+                        <div class="multi-select-button" id="from-ms-button">
+                            <span>Select Senders...</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="multi-select-dropdown" id="from-ms-dropdown"></div>
+                    </div>
                 </div>
-                 <select id="linkFilter" multiple></select>
 
-
-            </div>
-             <div class="sidebar-section">
-                <div class="filter-header">
-                    <label for="dateFilter">Date:</label>
-                   <select id="dateFilterType">
-                      <option value="any">Any</option>
-                     <option value="selected">Selected</option>
-                  </select>
+                <!-- Files Filter -->
+                <div class="filter-group">
+                    <label>Files</label>
+                    <select id="files-mode-select">
+                        <option value="not_file_related">Not File related</option>
+                        <option value="selected">Selected</option>
+                    </select>
+                    <div class="multi-select-container">
+                        <div class="multi-select-button" id="files-ms-button">
+                            <span>Select File Types...</span>
+                             <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="multi-select-dropdown" id="files-ms-dropdown"></div>
+                    </div>
                 </div>
-                <select id="dateFilter" multiple></select>
-           </div>
 
-            <div class="sidebar-section date-range-filter">
-                <label for="beforeDate">Before:</label>
-                <input type="date" id="beforeDate" >
-                <label for="afterDate">After:</label>
-                <input type="date" id="afterDate">
+                <!-- Links Filter -->
+                <div class="filter-group">
+                    <label>Links</label>
+                    <select id="links-mode-select">
+                        <option value="any">Any</option>
+                        <option value="selected">Selected</option>
+                    </select>
+                     <div class="multi-select-container">
+                        <div class="multi-select-button" id="links-ms-button">
+                            <span>Select Domains...</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="multi-select-dropdown" id="links-ms-dropdown"></div>
+                    </div>
+                </div>
 
+                <!-- Date Filter -->
+                <div class="filter-group">
+                    <label>Date</label>
+                    <select id="date-mode-select">
+                        <option value="any">Any</option>
+                        <option value="selected">Selected</option>
+                    </select>
+                    <div class="multi-select-container">
+                        <div class="multi-select-button" id="date-ms-button">
+                            <span>Select Dates...</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="multi-select-dropdown" id="date-ms-dropdown"></div>
+                    </div>
+                </div>
+
+                <!-- Date Range Filter -->
+                <div class="filter-group">
+                    <label>Date Range</label>
+                    <div class="date-range-container">
+                        <label for="afterDate">After:</label>
+                        <input type="date" id="afterDate">
+                        <label for="beforeDate">Before:</label>
+                        <input type="date" id="beforeDate">
+                    </div>
+                </div>
+
+                <button id="resetFilters" class="reset-button">
+                    <i class="fas fa-undo"></i> Reset All Filters
+                </button>
             </div>
-              <button id="resetFiltersBtn">Reset Filters</button>
         </aside>
-       <main class="content">
-           <div class="search-container">
-               <input type="text" id="searchBox" placeholder="Search messages..." autocomplete="off">
-                <span class="tooltip-trigger">?</span>
-                <div id="tooltip" class="hidden">
-                    Supported Operators:<br>
-                    <code>"phrase"</code> Search for an exact phrase.<br>
-                     <code>AND, OR, NOT</code> Boolean logic. <br>
-                    Click outside to dismiss.
+
+        <!-- Main Content for Results -->
+        <main class="main-content">
+            <div class="search-bar-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="searchInput" placeholder="Search messages...">
+                <div class="tooltip">
+                    <i class="fas fa-question-circle"></i>
+                    <span class="tooltiptext">
+                        <b>Search Operators:</b><br>
+                        "exact phrase"<br>
+                        word1 AND word2<br>
+                        word1 OR word2<br>
+                        NOT word
+                    </span>
                 </div>
             </div>
-            <div id="searchResults" class="hidden"></div>
-            <button id="loadMoreBtn" class="hidden">Load More</button>
+            <div id="results-info">Upload a chat file to begin.</div>
+            <div id="results-container">
+                <!-- Search results will be populated here -->
+            </div>
         </main>
-         <aside class="chat-history">
-            <div id="chatHistoryContent"></div>
-        </aside>
+        
+        <!-- Expanded Full Chat View -->
+        <section class="full-chat-view" id="full-chat-view" style="display: none;">
+            <div class="full-chat-header">
+                <h3>Full Conversation</h3>
+                <button id="close-full-chat" title="Close"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="full-chat-container">
+                <!-- Full chat history will be populated here -->
+            </div>
+        </section>
+
     </div>
-       <div class="floating-buttons">
-        <button id="scrollToTopBtn">↑</button>
-        <button id="donateBtn">Donate</button>
-    </div>
+
+    <!-- Floating Buttons -->
+    <button id="scrollToTopBtn" title="Go to top"><i class="fas fa-arrow-up"></i></button>
+    <a href="https://example.com/donate" target="_blank" rel="noopener noreferrer" id="donateBtn" title="Donate">
+        <i class="fas fa-heart"></i>
+    </a>
+
+    <!-- Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
