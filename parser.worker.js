@@ -16,10 +16,9 @@ self.onmessage = (e) => {
 function parseFile(text) {
     self.postMessage({ type: 'status', payload: 'Parsing chat file...' });
 
-    // This parsing logic is already fast, so it remains the same.
     const lines = text.split('\n');
     const messages = [];
-    const messageRegex = /^\[(\d{1,2}\/(\d{1,2}\/\d{2,4}, \d{1,2}:\d{2}:\d{2}\s?[APM]{2})\]\s(?:~\s)?([^:]+):\s([\s\S]*)/;
+    const messageRegex = /^\[(\d{1,2}\/\d{1,2}\/\d{2,4}, \d{1,2}:\d{2}:\d{2}\s?[APM]{2})\]\s(?:~\s)?([^:]+):\s([\s\S]*)/;
     let currentMessage = null;
     let messageId = 0;
 
@@ -44,7 +43,6 @@ function parseFile(text) {
 
     self.postMessage({ type: 'status', payload: 'Analyzing content...' });
 
-    // Post-processing and data aggregation
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     const fileRegex = /<attached: (.*?)(?:>| as .*)/;
     const senderCounts = {}, fileExtCounts = {}, domainCounts = {};
@@ -91,7 +89,6 @@ function parseFile(text) {
 
     allMessages = messages;
 
-    // NO MORE FUSE.JS. We are done almost instantly.
     self.postMessage({
         type: 'initialData',
         payload: {
@@ -106,7 +103,6 @@ function parseFile(text) {
 
 // --- High-Performance Filtering and Searching Function ---
 function filterAndSearch(filterState) {
-    // Start with all messages
     let results = allMessages;
 
     // Apply simple, fast filters first
@@ -155,24 +151,21 @@ function filterAndSearch(filterState) {
 function buildSearchFunction(query) {
     const lowerCaseQuery = query.toLowerCase();
     
-    // Regular expression to safely escape strings for regex construction.
     const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     
-    // Extract "exact phrases"
     const exactPhrases = [];
     const withoutExacts = lowerCaseQuery.replace(/"([^"]+)"/g, (_, phrase) => {
         exactPhrases.push(escapeRegex(phrase));
         return '';
     });
 
-    // Extract NOT terms
     const notTerms = [];
+    // --- THIS IS THE CORRECTED LINE ---
     const withoutNots = withoutExacts.replace(/not\s+(\w+)/g, (_, term) => {
         notTerms.push(escapeRegex(term));
         return '';
     });
 
-    // Process AND/OR terms
     const tokens = withoutNots.trim().split(/\s+/).filter(Boolean);
     const andTerms = [];
     const orTerms = [];
@@ -195,38 +188,23 @@ function buildSearchFunction(query) {
         }
     }
     
-    // This returned function will be called for each message
     return (text) => {
-        // Check NOT conditions first (fastest to fail)
         if (notTerms.length > 0) {
             for (const term of notTerms) {
                 if (new RegExp(term, 'i').test(text)) return false;
             }
         }
-
-        // Check "exact phrase" conditions
         for (const phrase of exactPhrases) {
             if (!new RegExp(phrase, 'i').test(text)) return false;
         }
-
-        // Check AND conditions
         for (const term of andTerms) {
             if (!new RegExp(term, 'i').test(text)) return false;
         }
-
-        // Check OR conditions (if any exist, at least one must pass)
         if (orTerms.length > 0) {
-            let orPassed = false;
-            for (const term of orTerms) {
-                if (new RegExp(term, 'i').test(text)) {
-                    orPassed = true;
-                    break;
-                }
+            if (!orTerms.some(term => new RegExp(term, 'i').test(text))) {
+                return false;
             }
-            if (!orPassed) return false;
         }
-
-        // If we survived all checks, it's a match!
         return true;
     };
 }
